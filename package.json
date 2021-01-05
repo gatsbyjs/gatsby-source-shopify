@@ -1,0 +1,27 @@
+{
+  "name": "gatsby-source-shopify-graphql-poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "gatsby develop"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc/issues"
+  },
+  "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "gatsby": "^2.30.0",
+    "gatsby-graphql-source-toolkit": "^0.6.3",
+    "graphql": "^15.4.0",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  }
+}
