@@ -8,6 +8,7 @@ const {
   sourceAllNodes,
   writeCompiledQueries,
 } = require(`gatsby-graphql-source-toolkit`);
+const { isScalarType } = require("graphql");
 require("dotenv").config();
 
 async function createConfig(gatsbyApi) {
@@ -33,11 +34,17 @@ async function createConfig(gatsbyApi) {
 
   const type = schema.getType(`QueryRoot`);
   const collectionTypes = Object.keys(type.getFields()).filter(t => {
-    let queryType = schema.getQueryType()
-    let fields = queryType.getFields()
-    let remoteTypeName = fields[t].type.toString()
+    const fields = schema.getQueryType().getFields()
 
-    return remoteTypeName.includes(`Connection`)
+    if (!fields[t].type.toString().includes(`Connection`)) {
+      return false
+    }
+
+    let connectionType = fields[t].type.ofType
+    const typeInfo = schema.getType(connectionType)
+    const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
+    const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
+    return !isScalarType(remoteTypeName)
   })
 
   const gatsbyNodeTypes = collectionTypes.map((t) => {
@@ -49,29 +56,33 @@ async function createConfig(gatsbyApi) {
     const typeInfo = schema.getType(connectionType)
     const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
     const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
+    const nodeDefinition = isScalarType(remoteTypeName) ?
+      `node` :
+      `node { ..._${remoteTypeName}Id_ }`
+    
+    const fragmentDefinition = isScalarType(remoteTypeName) ? `` : `
+      fragment _${remoteTypeName}Id_ on ${remoteTypeName} {
+        __typename
+        id
+      }
+    `
 
     const queries = `
       query LIST_${t.toUpperCase()} {
         ${t}(first: $first, after: $after) {
           edges {
-            node { ..._${remoteTypeName}Id_ }
+            ${nodeDefinition}
             cursor
           }
-          pageInfo {
-            hasNextPage
-          }
+          pageInfo { hasNextPage }
         }
       }
-      fragment _${remoteTypeName}Id_ on ${remoteTypeName} {
-        __typename
-        id
-      }
+      ${fragmentDefinition}
     `;
 
-    return { remoteTypeName, queries };
+    return { remoteTypeName: `${remoteTypeName}`, queries };
   });
 
-  console.log(gatsbyNodeTypes)
 
   const provideConnectionArgs = (field, parentType) => {
     if (field.args.some(arg => arg.name === `first`)) {
