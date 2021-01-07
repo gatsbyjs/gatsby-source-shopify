@@ -56,28 +56,21 @@ async function createConfig(gatsbyApi) {
     const typeInfo = schema.getType(connectionType)
     const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
     const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
-    const nodeDefinition = isScalarType(remoteTypeName) ?
-      `node` :
-      `node { ..._${remoteTypeName}Id_ }`
-    
-    const fragmentDefinition = isScalarType(remoteTypeName) ? `` : `
-      fragment _${remoteTypeName}Id_ on ${remoteTypeName} {
-        __typename
-        id
-      }
-    `
 
     const queries = `
       query LIST_${t.toUpperCase()} {
         ${t}(first: $first, after: $after) {
           edges {
-            ${nodeDefinition}
+            node { ..._${remoteTypeName}Id_ }
             cursor
           }
           pageInfo { hasNextPage }
         }
       }
-      ${fragmentDefinition}
+      fragment _${remoteTypeName}Id_ on ${remoteTypeName} {
+        __typename
+        id
+      }
     `;
 
     return { remoteTypeName: `${remoteTypeName}`, queries };
