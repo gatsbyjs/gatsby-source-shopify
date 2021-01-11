@@ -12,19 +12,6 @@ const { isScalarType } = require("graphql");
 require("dotenv").config();
 
 async function createConfig(gatsbyApi) {
-  // const schemaUrl = `https://${process.env.SHOPIFY_STORE_URL}/api/2021-01/graphql`;
-  // const execute = createDefaultQueryExecutor(
-  //   schemaUrl,
-  //   {
-  //     headers: {
-  //       "X-Shopify-Storefront-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN,
-  //       "Content-Type": "application/json",
-  //       "Accept": "application/json",
-  //     },
-  //   },
-  //   { concurrency: 1 }
-  // )
-
   const execute = createDefaultQueryExecutor(
     `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`,
     {
@@ -57,16 +44,30 @@ async function createConfig(gatsbyApi) {
     const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
 
     if (remoteTypeName.toString().endsWith(`Event`)) {
-      /* We'll get events separately 
-       * when we delta sync!
+      /* We'll get events separately when we delta sync!
        */
       return false
     }
 
     if (!remoteTypeName.toConfig().fields.id) {
-      /* Maybe we'll figure out a different way
-       * to deal with things like this, e.g. TranslatableResource
-       * which has a resourceId
+      /* Maybe we'll figure out a different way to deal with things
+       * like this, e.g. TranslatableResource which has a resourceId
+       */
+      return false
+    }
+
+    const typesWeMightNotNeedThatHaveHugeFragmentDefinitions = [
+      `AppInstallation`,
+      `DiscountAutomaticNode`,
+      `DiscountCodeNode`,
+      `DraftOrder`,
+      `MarketingActivity`,
+      `Order`,
+      `PriceRule`,
+    ]
+
+    if (typesWeMightNotNeedThatHaveHugeFragmentDefinitions.includes(remoteTypeName.toString())) {
+      /* Don't think we need this and its default fragment is enormous
        */
       return false
     }
@@ -115,25 +116,6 @@ async function createConfig(gatsbyApi) {
     const count = typeMap[nodeType.remoteTypeName] || 0
     typeMap[nodeType.remoteTypeName] = count + 1
   }
-
-  console.log(typeMap)
-  /* Getting an odd error here saying this isn't part of the schema.
-   * Might be premissions related.
-   */
-  // gatsbyNodeTypes.push({
-  //   remoteTypeName: `ShopPolicy`,
-  //   queries: `
-  //     query LIST_SHOP_POLICIES {
-  //       shop {
-  //         shopPolicies { ..._ShopPolicyId_ }
-  //       }
-  //     }
-  //     fragment _ShopPolicyId_ on ShopPolicy {
-  //       __typename
-  //       id
-  //     }
-  //   `
-  // })
 
   const provideConnectionArgs = (field, parentType) => {
     if (field.args.some(arg => arg.name === `first`)) {
