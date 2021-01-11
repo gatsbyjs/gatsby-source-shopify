@@ -40,7 +40,6 @@ async function createConfig(gatsbyApi) {
   const schema = await loadSchema(execute)
 
   const type = schema.getType(`QueryRoot`);
-  console.log(type.getFields())
   const collectionTypes = Object.keys(type.getFields()).filter(t => {
     if (type.getFields()[t].isDeprecated) {
       return false
@@ -56,6 +55,22 @@ async function createConfig(gatsbyApi) {
     const typeInfo = schema.getType(connectionType)
     const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
     const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
+
+    if (remoteTypeName.toString().endsWith(`Event`)) {
+      /* We'll get events separately 
+       * when we delta sync!
+       */
+      return false
+    }
+
+    if (!remoteTypeName.toConfig().fields.id) {
+      /* Maybe we'll figure out a different way
+       * to deal with things like this, e.g. TranslatableResource
+       * which has a resourceId
+       */
+      return false
+    }
+
     return !isScalarType(remoteTypeName)
   })
 
