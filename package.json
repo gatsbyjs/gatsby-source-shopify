@@ -21,6 +21,7 @@
     "gatsby": "^2.30.0",
     "gatsby-graphql-source-toolkit": "^0.6.3",
     "graphql": "^15.4.0",
+    "graphql-request": "^3.4.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   }
