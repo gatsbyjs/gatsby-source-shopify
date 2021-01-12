@@ -1,5 +1,6 @@
 require("dotenv").config()
 const fetch = require("node-fetch")
+const { createInterface } = require("readline")
 const GraphQLClient = require("graphql-request").GraphQLClient
 
 const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
@@ -16,6 +17,24 @@ module.exports.sourceNodes = async function() {
               node {
                 id
                 title
+                variants {
+                  edges {
+                    node {
+                      availableForSale
+                      compareAtPrice
+                      price
+                      metafields {
+                        edges {
+                          node {
+                            description
+                            value
+                            valueType
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -55,7 +74,9 @@ module.exports.sourceNodes = async function() {
   let operationResponse
 
   while(true) {
+    console.info(`Polling bulk operation status`)
     operationResponse = await client.request(operationStatusQuery)
+    console.info(operationResponse.currentBulkOperation.status)
     if (operationResponse.currentBulkOperation.status === `COMPLETED`) {
       break
     }
@@ -64,5 +85,15 @@ module.exports.sourceNodes = async function() {
   }
 
   const results = await fetch(operationResponse.currentBulkOperation.url)
-  console.log(await results.text())
+  const rl = createInterface({
+    input: results.body,
+    crlfDelay: Infinity,
+  })
+
+  const objects = []
+  for await (const line of rl) {
+    objects.push(JSON.parse(line))
+  }
+
+  console.log(objects)
 }
