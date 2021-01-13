@@ -6,7 +6,7 @@ const GraphQLClient = require("graphql-request").GraphQLClient
 const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
 const client = new GraphQLClient(adminUrl)
 
-module.exports.sourceNodes = async function() {
+module.exports.sourceNodes = async function({ reporter }) {
   const productsOperation = `
     mutation {
       bulkOperationRunQuery(
@@ -20,12 +20,14 @@ module.exports.sourceNodes = async function() {
                 variants {
                   edges {
                     node {
+                      id
                       availableForSale
                       compareAtPrice
                       price
                       metafields {
                         edges {
                           node {
+                            id
                             description
                             value
                             valueType
@@ -71,12 +73,20 @@ module.exports.sourceNodes = async function() {
 
   const response = await client.request(productsOperation)
 
+  if (response.bulkOperationRunQuery.userErrors.length) {
+    reporter.panic({
+      context: {
+        sourceMessage: `Couldn't perform bulk operation`
+      }
+    }, ...response.bulkOperationRunQuery.userErrors)
+  }
+
   let operationResponse
 
   while(true) {
     console.info(`Polling bulk operation status`)
     operationResponse = await client.request(operationStatusQuery)
-    console.info(operationResponse.currentBulkOperation.status)
+    console.info(operationResponse)
     if (operationResponse.currentBulkOperation.status === `COMPLETED`) {
       break
     }
