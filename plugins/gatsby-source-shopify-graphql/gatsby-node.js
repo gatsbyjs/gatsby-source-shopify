@@ -1,12 +1,21 @@
 require("dotenv").config()
 const fetch = require("node-fetch")
+const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
 const GraphQLClient = require("graphql-request").GraphQLClient
 
 const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
 const client = new GraphQLClient(adminUrl)
 
-module.exports.sourceNodes = async function({ reporter }) {
+const Node = remoteType => createNodeFactory(remoteType)
+
+module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
+  const nodeHelpers = createNodeHelpers({
+    typePrefix: `Shopify`,
+    createNodeId,
+    createContentDigest,
+  })
+
   const productsOperation = `
     mutation {
       bulkOperationRunQuery(
@@ -105,5 +114,19 @@ module.exports.sourceNodes = async function({ reporter }) {
     objects.push(JSON.parse(line))
   }
 
-  console.log(objects)
+  // 'gid://shopify/Metafield/6936247730264'
+  const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/
+  const factoryMap = {}
+  for(var i = objects.length - 1; i >= 0; i--) {
+    const obj = objects[i]
+    console.log(obj)
+    const [_, remoteType] = obj.id.match(pattern)
+    if (!factoryMap[remoteType]) {
+      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
+    }
+
+    const Node = factoryMap[remoteType]
+    const node = Node(obj)
+    actions.createNode(node)
+  }
 }
