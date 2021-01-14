@@ -2,12 +2,10 @@ require("dotenv").config()
 const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
-const GraphQLClient = require("graphql-request").GraphQLClient
+const { GraphQLClient } = require("graphql-request")
 
 const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
 const client = new GraphQLClient(adminUrl)
-
-const Node = remoteType => createNodeFactory(remoteType)
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -80,14 +78,14 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     }
   `
 
-  const response = await client.request(productsOperation)
+  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await client.request(productsOperation)
 
-  if (response.bulkOperationRunQuery.userErrors.length) {
+  if (userErrors.length) {
     reporter.panic({
       context: {
         sourceMessage: `Couldn't perform bulk operation`
       }
-    }, ...response.bulkOperationRunQuery.userErrors)
+    }, ...userErrors)
   }
 
   let operationResponse
@@ -96,7 +94,8 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     console.info(`Polling bulk operation status`)
     operationResponse = await client.request(operationStatusQuery)
     console.info(operationResponse)
-    if (operationResponse.currentBulkOperation.status === `COMPLETED`) {
+    const { currentBulkOperation } = operationResponse
+    if (currentBulkOperation.status === `COMPLETED`) {
       break
     }
     
@@ -127,6 +126,25 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
 
     const Node = factoryMap[remoteType]
     const node = Node(obj)
+
+    if (obj.__parentId) {
+      const [id, remoteType] = obj.__parentId.match(pattern)
+      const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1)
+      node[field] = { id }
+    }
+
     actions.createNode(node)
   }
+}
+
+exports.createSchemaCustomization = ({ actions }) => {
+  actions.createTypes(`
+    type Product implements Node {
+      variants: [ProductVariant] @link
+    }
+
+    type ProductVariant implements Node {
+      product: Product @link(by: "product.variants.id", from: "product.id")
+    }
+  `)
 }
