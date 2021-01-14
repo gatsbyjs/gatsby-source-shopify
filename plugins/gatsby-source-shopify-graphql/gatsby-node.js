@@ -124,15 +124,15 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
       factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
     }
 
-    const Node = factoryMap[remoteType]
-    const node = Node(obj)
-
     if (obj.__parentId) {
-      const [id, remoteType] = obj.__parentId.match(pattern)
+      const [_, remoteType, id] = obj.__parentId.match(pattern)
       const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1)
-      node[field] = { id }
+      obj[field] = { id }
+      delete obj.__parentId
     }
 
+    const Node = factoryMap[remoteType]
+    const node = Node(obj)
     actions.createNode(node)
   }
 }
@@ -144,7 +144,7 @@ exports.createSchemaCustomization = ({ actions }) => {
     }
 
     type ProductVariant implements Node {
-      product: Product @link(by: "product.variants.id", from: "product.id")
+      product: Product @link
     }
   `)
 }
