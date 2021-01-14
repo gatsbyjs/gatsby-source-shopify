@@ -139,12 +139,12 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
 
 exports.createSchemaCustomization = ({ actions }) => {
   actions.createTypes(`
-    type Product implements Node {
-      variants: [ProductVariant] @link
+    type ShopifyProductVariant implements Node {
+      product: ShopifyProduct @link
     }
 
-    type ProductVariant implements Node {
-      product: Product @link
+    type ShopifyProduct implements Node {
+      variants: [ShopifyProductVariant] @link
     }
   `)
 }
