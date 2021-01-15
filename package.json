@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "gatsby develop"
-  },
+    "start": "gatsby develop",
+    "start:debug": "node --nolazy node_modules/.bin/gatsby develop --inspect-brk"
+   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc.git"
@@ -20,7 +21,9 @@
     "dotenv": "^8.2.0",
     "gatsby": "^2.30.0",
     "gatsby-graphql-source-toolkit": "^0.6.3",
+    "gatsby-node-helpers": "^1.0.3",
     "graphql": "^15.4.0",
+    "graphql-request": "^3.4.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   }

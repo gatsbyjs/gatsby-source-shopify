@@ -1,114 +1,167 @@
-const {
-  loadSchema,
-  createDefaultQueryExecutor,
-  readOrGenerateDefaultFragments,
-  compileNodeQueries,
-  buildNodeDefinitions,
-  createSchemaCustomization,
-  sourceAllNodes,
-  writeCompiledQueries,
-} = require(`gatsby-graphql-source-toolkit`);
-const { isScalarType } = require("graphql");
-require("dotenv").config();
+require("dotenv").config()
+const fetch = require("node-fetch")
+const { createNodeHelpers } = require("gatsby-node-helpers")
+const { createInterface } = require("readline")
+const { GraphQLClient } = require("graphql-request")
 
-async function createConfig(gatsbyApi) {
-  const schemaUrl = `https://${process.env.SHOPIFY_STORE_URL}/api/2021-01/graphql`;
-  const execute = createDefaultQueryExecutor(
-    schemaUrl,
-    {
-      headers: {
-        "X-Shopify-Storefront-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-    },
-    { concurrency: 1 }
-  )
+const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
+const client = new GraphQLClient(adminUrl)
 
-  // const execute = args => {
-  //   // console.log(args.operationName, args.variables)
-  //   return defaultExecute(args)
-  // }
-
-  const schema = await loadSchema(execute)
-
-  const type = schema.getType(`QueryRoot`);
-  const collectionTypes = Object.keys(type.getFields()).filter(t => {
-    const fields = schema.getQueryType().getFields()
-
-    if (!fields[t].type.toString().includes(`Connection`)) {
-      return false
-    }
-
-    let connectionType = fields[t].type.ofType
-    const typeInfo = schema.getType(connectionType)
-    const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
-    const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
-    return !isScalarType(remoteTypeName)
+module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
+  const nodeHelpers = createNodeHelpers({
+    typePrefix: `Shopify`,
+    createNodeId,
+    createContentDigest,
   })
 
-  const gatsbyNodeTypes = collectionTypes.map((t) => {
-    let queryType = schema.getQueryType()
-    let fields = queryType.getFields()
-
-
-    let connectionType = fields[t].type.ofType
-    const typeInfo = schema.getType(connectionType)
-    const edgeType = typeInfo.toConfig().fields.edges.type.ofType.ofType.ofType
-    const remoteTypeName = edgeType.toConfig().fields.node.type.ofType
-
-    const queries = `
-      query LIST_${t.toUpperCase()} {
-        ${t}(first: $first, after: $after) {
-          edges {
-            node { ..._${remoteTypeName}Id_ }
-            cursor
+  const productsOperation = `
+    mutation {
+      bulkOperationRunQuery(
+      query: """
+        {
+          products {
+            edges {
+              node {
+                id
+                title
+                variants {
+                  edges {
+                    node {
+                      id
+                      availableForSale
+                      compareAtPrice
+                      price
+                    }
+                  }
+                }
+              }
+            }
           }
-          pageInfo { hasNextPage }
+        }
+        """
+      ) {
+        bulkOperation {
+          id
+          status
+        }
+        userErrors {
+          field
+          message
         }
       }
-      fragment _${remoteTypeName}Id_ on ${remoteTypeName} {
-        __typename
-        id
-      }
-    `;
-
-    return { remoteTypeName: `${remoteTypeName}`, queries };
-  });
-
-
-  const provideConnectionArgs = (field, parentType) => {
-    if (field.args.some(arg => arg.name === `first`)) {
-      return { first: 10 }
     }
+  `
+
+  const operationStatusQuery = `
+    query {
+      currentBulkOperation {
+        id
+        status
+        errorCode
+        createdAt
+        completedAt
+        objectCount
+        fileSize
+        url
+        partialDataUrl
+      }
+    }
+  `
+
+  /* FIXME
+   * This will fail if there's an operation in progress
+   * for this shop. Should we just keep polling if we
+   * get this error?
+   */
+  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await client.request(productsOperation)
+
+  if (userErrors.length) {
+    reporter.panic({
+      context: {
+        sourceMessage: `Couldn't perform bulk operation`
+      }
+    }, ...userErrors)
   }
-  const fragments = await readOrGenerateDefaultFragments(`./shopify-fragments`, {
-    schema,
-    gatsbyNodeTypes,
-    defaultArgumentValues: [provideConnectionArgs]
-  });
 
-  const documents = compileNodeQueries({
-    schema,
-    gatsbyNodeTypes,
-    customFragments: fragments,
-  });
+  let operationResponse
 
-  await writeCompiledQueries("./sourcing-queries", documents);
+  while(true) {
+    console.info(`Polling bulk operation status`)
+    operationResponse = await client.request(operationStatusQuery)
+    console.info(bulkOperation, operationResponse)
+    const { currentBulkOperation } = operationResponse
+    if (currentBulkOperation.status === 'COMPLETED' && currentBulkOperation.id === bulkOperation.id) {
+      break
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
 
-  return {
-    gatsbyApi,
-    schema,
-    execute,
-    gatsbyTypePrefix: `Shopify`,
-    gatsbyNodeDefs: buildNodeDefinitions({ gatsbyNodeTypes, documents }),
-  };
+  const results = await fetch(operationResponse.currentBulkOperation.url)
+  const rl = createInterface({
+    input: results.body,
+    crlfDelay: Infinity,
+  })
+
+  const objects = []
+  for await (const line of rl) {
+    objects.push(JSON.parse(line))
+  }
+
+  // 'gid://shopify/Metafield/6936247730264'
+  const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/
+  const factoryMap = {}
+  for(var i = objects.length - 1; i >= 0; i--) {
+    const obj = objects[i]
+    console.log(obj)
+    const [_, remoteType, shopifyId] = obj.id.match(pattern)
+    if (!factoryMap[remoteType]) {
+      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
+    }
+
+    if (obj.__parentId) {
+      const [_, remoteType, id] = obj.__parentId.match(pattern)
+      const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1)
+      const idField = `${field}Id`
+      obj[idField] = id
+      delete obj.__parentId
+    }
+
+    const Node = factoryMap[remoteType]
+    const node = Node({ ...obj, id: shopifyId })
+    actions.createNode(node)
+  }
 }
 
-exports.sourceNodes = async (gatsbyApi) => {
-  const config = await createConfig(gatsbyApi);
+exports.createSchemaCustomization = ({ actions }) => {
+  actions.createTypes(`
+    type ShopifyProductVariant implements Node {
+      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+    }
 
-  await createSchemaCustomization(config);
+    type ShopifyProduct implements Node {
+      variants: [ShopifyProductVariant]
+    }
+  `)
+}
 
-  await sourceAllNodes(config);
-};
+exports.createResolvers = ({ createResolvers }) => {
+  createResolvers({
+    ShopifyProduct: {
+      variants: {
+        type: ["ShopifyProductVariant"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productId: { eq: source.shopifyId }
+              }
+            },
+            type: "ShopifyProductVariant",
+            firstOnly: false,
+          })
+        }
+      }
+    },
+  })
+}
