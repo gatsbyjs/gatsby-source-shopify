@@ -31,16 +31,6 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
                       availableForSale
                       compareAtPrice
                       price
-                      metafields {
-                        edges {
-                          node {
-                            id
-                            description
-                            value
-                            valueType
-                          }
-                        }
-                      }
                     }
                   }
                 }
@@ -78,6 +68,11 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     }
   `
 
+  /* FIXME
+   * This will fail if there's an operation in progress
+   * for this shop. Should we just keep polling if we
+   * get this error?
+   */
   const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await client.request(productsOperation)
 
   if (userErrors.length) {
@@ -93,9 +88,9 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
   while(true) {
     console.info(`Polling bulk operation status`)
     operationResponse = await client.request(operationStatusQuery)
-    console.info(operationResponse)
+    console.info(bulkOperation, operationResponse)
     const { currentBulkOperation } = operationResponse
-    if (currentBulkOperation.status === `COMPLETED`) {
+    if (currentBulkOperation.status === 'COMPLETED' && currentBulkOperation.id === bulkOperation.id) {
       break
     }
     
@@ -119,7 +114,7 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
   for(var i = objects.length - 1; i >= 0; i--) {
     const obj = objects[i]
     console.log(obj)
-    const [_, remoteType] = obj.id.match(pattern)
+    const [_, remoteType, shopifyId] = obj.id.match(pattern)
     if (!factoryMap[remoteType]) {
       factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
     }
@@ -127,12 +122,13 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     if (obj.__parentId) {
       const [_, remoteType, id] = obj.__parentId.match(pattern)
       const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1)
-      obj[field] = { id }
+      const idField = `${field}Id`
+      obj[idField] = id
       delete obj.__parentId
     }
 
     const Node = factoryMap[remoteType]
-    const node = Node(obj)
+    const node = Node({ ...obj, id: shopifyId })
     actions.createNode(node)
   }
 }
@@ -140,11 +136,32 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
 exports.createSchemaCustomization = ({ actions }) => {
   actions.createTypes(`
     type ShopifyProductVariant implements Node {
-      product: ShopifyProduct @link
+      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
     }
 
     type ShopifyProduct implements Node {
-      variants: [ShopifyProductVariant] @link
+      variants: [ShopifyProductVariant]
     }
   `)
+}
+
+exports.createResolvers = ({ createResolvers }) => {
+  createResolvers({
+    ShopifyProduct: {
+      variants: {
+        type: ["ShopifyProductVariant"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productId: { eq: source.shopifyId }
+              }
+            },
+            type: "ShopifyProductVariant",
+            firstOnly: false,
+          })
+        }
+      }
+    },
+  })
 }
