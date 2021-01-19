@@ -3,7 +3,7 @@ const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
 const { client } = require("./client")
-const { currentOperation, finishLastOperation } = require('./current-operation')
+const { currentOperation, finishLastOperation, completedOperation } = require('./current-operation')
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -62,21 +62,20 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     }, ...userErrors)
   }
 
-  let operationResponse
+  let resp
 
   while(true) {
     console.info(`Polling bulk operation status`)
-    operationResponse = await currentOperation()
-    console.info(bulkOperation, operationResponse)
-    const { currentBulkOperation } = operationResponse
-    if (currentBulkOperation.status === 'COMPLETED' && currentBulkOperation.id === bulkOperation.id) {
+    resp = await completedOperation(bulkOperation.id)
+    console.info(bulkOperation, resp)
+    if (resp.node.status === 'COMPLETED' && resp.node.id === bulkOperation.id) {
       break
     }
     
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 
-  const results = await fetch(operationResponse.currentBulkOperation.url)
+  const results = await fetch(resp.node.url)
 
   /* FIXME
    * Getting warnings about this being experimental.
