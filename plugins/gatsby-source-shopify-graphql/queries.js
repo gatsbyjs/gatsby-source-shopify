@@ -47,7 +47,48 @@ module.exports.CREATE_OPERATION = `
                     id
                     availableForSale
                     compareAtPrice
+                    selectedOptions {
+                      name
+                      value
+                    }
                     price
+                    metafields {
+                      edges {
+                        node {
+                          description
+                          id
+                          key
+                          namespace
+                          value
+                          valueType
+                        }
+                      }
+                    }
+
+                    #######################################################
+                    # FIXME!!
+                    # How do we handle presentment prices?
+                    # Because they are a connection, they are treated
+                    # like a node, but they don't come back with an ID,
+                    # so we don't actually know what they are, since the ID
+                    # is what contains the type info. Can we verify that we
+                    # actually need this data? How do customers use it?
+
+                    # presentmentPrices {
+                    #   edges {
+                    #     node {
+                    #       price {
+                    #         amount
+                    #         currencyCode
+                    #       }
+                    #       compareAtPrice {
+                    #         amount
+                    #         currencyCode
+                    #       }
+                    #     }
+                    #   }
+                    # }
+                    #######################################################
                   }
                 }
               }
