@@ -3,6 +3,7 @@ const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
 const { finishLastOperation, createOperation, completedOperation } = require('./operations')
+const { nodeBuilder } = require('./node-builder')
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -42,27 +43,10 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     objects.push(JSON.parse(line))
   }
 
-  // 'gid://shopify/Metafield/6936247730264'
-  const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/
-  const factoryMap = {}
   for(var i = 0; i < objects.length; i++) {
     const obj = objects[i]
-
-    const [_, remoteType, shopifyId] = obj.id.match(pattern)
-    if (!factoryMap[remoteType]) {
-      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
-    }
-
-    if (obj.__parentId) {
-      const [_, remoteType, id] = obj.__parentId.match(pattern)
-      const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1)
-      const idField = `${field}Id`
-      obj[idField] = id
-      delete obj.__parentId
-    }
-
-    const Node = factoryMap[remoteType]
-    const node = Node({ ...obj, id: shopifyId })
+    const builder = nodeBuilder(nodeHelpers)
+    const node = builder.buildNode(obj)
     actions.createNode(node)
   }
 }
@@ -72,6 +56,7 @@ exports.createSchemaCustomization = ({ actions }) => {
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
       metafields: [ShopifyMetafield]
+      presentmentPrices: [ShopifyProductVariantPricePair]
     }
 
     type ShopifyProduct implements Node {
@@ -81,12 +66,31 @@ exports.createSchemaCustomization = ({ actions }) => {
     type ShopifyMetafield implements Node {
       productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
     }
+
+    type ShopifyProductVariantPricePair implements Node {
+      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
+    }
   `)
 }
 
 exports.createResolvers = ({ createResolvers }) => {
   createResolvers({
     ShopifyProductVariant: {
+      presentmentPrices: {
+        type: ["ShopifyProductVariantPricePair"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productVariantId: { eq: source.shopifyId }
+              }
+            },
+            type: "ShopifyProductVariantPricePair",
+            firstOnly: false,
+          })
+        }
+
+      },
       metafields: {
         type: ["ShopifyMetafield"],
         resolve(source, args, context, info) {

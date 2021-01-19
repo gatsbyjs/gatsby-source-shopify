@@ -74,20 +74,21 @@ module.exports.CREATE_OPERATION = `
                     # is what contains the type info. Can we verify that we
                     # actually need this data? How do customers use it?
 
-                    # presentmentPrices {
-                    #   edges {
-                    #     node {
-                    #       price {
-                    #         amount
-                    #         currencyCode
-                    #       }
-                    #       compareAtPrice {
-                    #         amount
-                    #         currencyCode
-                    #       }
-                    #     }
-                    #   }
-                    # }
+                    presentmentPrices {
+                      edges {
+                        node {
+                          __typename
+                          price {
+                            amount
+                            currencyCode
+                          }
+                          compareAtPrice {
+                            amount
+                            currencyCode
+                          }
+                        }
+                      }
+                    }
                     #######################################################
                   }
                 }
