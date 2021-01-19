@@ -62,25 +62,7 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     }, ...userErrors)
   }
 
-  let resp
-
-  while(true) {
-    console.info(`Polling bulk operation status`)
-    resp = await completedOperation(bulkOperation.id)
-    console.info(bulkOperation, resp)
-    if (resp.node.status === 'COMPLETED') {
-      break
-    }
-    
-    /* Maybe the interval should be adjustable, because users
-     * with larger data sets could easily wait longer. We could
-     * perhaps detect that the interval being used is too small
-     * based on returned object counts and iteration counts, and
-     * surface feedback to the user suggesting that they increase
-     * the interval.
-     */
-    await new Promise(resolve => setTimeout(resolve, 1000))
-  }
+  let resp = await completedOperation(bulkOperation.id)
 
   const results = await fetch(resp.node.url)
 
