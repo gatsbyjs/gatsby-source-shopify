@@ -2,10 +2,7 @@ require("dotenv").config()
 const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
-const { GraphQLClient } = require("graphql-request")
-
-const adminUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/graphql.json`
-const client = new GraphQLClient(adminUrl)
+const { finishLastOperation, createOperation, completedOperation } = require('./operations')
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -14,66 +11,9 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     createContentDigest,
   })
 
-  const productsOperation = `
-    mutation {
-      bulkOperationRunQuery(
-      query: """
-        {
-          products {
-            edges {
-              node {
-                id
-                title
-                variants {
-                  edges {
-                    node {
-                      id
-                      availableForSale
-                      compareAtPrice
-                      price
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        """
-      ) {
-        bulkOperation {
-          id
-          status
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `
+  await finishLastOperation()
 
-  const operationStatusQuery = `
-    query {
-      currentBulkOperation {
-        id
-        status
-        errorCode
-        createdAt
-        completedAt
-        objectCount
-        fileSize
-        url
-        partialDataUrl
-      }
-    }
-  `
-
-  /* FIXME
-   * This will fail if there's an operation in progress
-   * for this shop. Should we just keep polling if we
-   * get this error?
-   */
-  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await client.request(productsOperation)
+  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await createOperation()
 
   if (userErrors.length) {
     reporter.panic({
@@ -83,21 +23,15 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     }, ...userErrors)
   }
 
-  let operationResponse
+  let resp = await completedOperation(bulkOperation.id)
 
-  while(true) {
-    console.info(`Polling bulk operation status`)
-    operationResponse = await client.request(operationStatusQuery)
-    console.info(bulkOperation, operationResponse)
-    const { currentBulkOperation } = operationResponse
-    if (currentBulkOperation.status === 'COMPLETED' && currentBulkOperation.id === bulkOperation.id) {
-      break
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, 1000))
-  }
+  const results = await fetch(resp.node.url)
 
-  const results = await fetch(operationResponse.currentBulkOperation.url)
+  /* FIXME
+   * Getting warnings about this being experimental.
+   * We want to read the stream one line at a time, but let's make
+   * sure to do it in the recommended way.
+   */
   const rl = createInterface({
     input: results.body,
     crlfDelay: Infinity,
@@ -113,7 +47,6 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
   const factoryMap = {}
   for(var i = objects.length - 1; i >= 0; i--) {
     const obj = objects[i]
-    console.log(obj)
     const [_, remoteType, shopifyId] = obj.id.match(pattern)
     if (!factoryMap[remoteType]) {
       factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
