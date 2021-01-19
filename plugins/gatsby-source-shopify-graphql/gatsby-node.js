@@ -45,8 +45,9 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
   // 'gid://shopify/Metafield/6936247730264'
   const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/
   const factoryMap = {}
-  for(var i = objects.length - 1; i >= 0; i--) {
+  for(var i = 0; i < objects.length; i++) {
     const obj = objects[i]
+
     const [_, remoteType, shopifyId] = obj.id.match(pattern)
     if (!factoryMap[remoteType]) {
       factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType)
@@ -70,16 +71,37 @@ exports.createSchemaCustomization = ({ actions }) => {
   actions.createTypes(`
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+      metafields: [ShopifyMetafield]
     }
 
     type ShopifyProduct implements Node {
       variants: [ShopifyProductVariant]
+    }
+
+    type ShopifyMetafield implements Node {
+      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
     }
   `)
 }
 
 exports.createResolvers = ({ createResolvers }) => {
   createResolvers({
+    ShopifyProductVariant: {
+      metafields: {
+        type: ["ShopifyMetafield"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productVariantId: { eq: source.shopifyId }
+              }
+            },
+            type: "ShopifyMetafield",
+            firstOnly: false,
+          })
+        }
+      }
+    },
     ShopifyProduct: {
       variants: {
         type: ["ShopifyProductVariant"],
