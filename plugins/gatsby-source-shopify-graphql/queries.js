@@ -30,3 +30,41 @@ query OPERATION_BY_ID($id: ID!) {
   }
 }
 `
+
+module.exports.CREATE_OPERATION = `
+  mutation {
+    bulkOperationRunQuery(
+    query: """
+      {
+        products {
+          edges {
+            node {
+              id
+              title
+              variants {
+                edges {
+                  node {
+                    id
+                    availableForSale
+                    compareAtPrice
+                    price
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      """
+    ) {
+      bulkOperation {
+        id
+        status
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`

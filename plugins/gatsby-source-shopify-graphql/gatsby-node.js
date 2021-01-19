@@ -2,8 +2,7 @@ require("dotenv").config()
 const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
-const { client } = require("./client")
-const { finishLastOperation, completedOperation } = require('./current-operation')
+const { finishLastOperation, createOperation, completedOperation } = require('./operations')
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -12,47 +11,9 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     createContentDigest,
   })
 
-  const productsOperation = `
-    mutation {
-      bulkOperationRunQuery(
-      query: """
-        {
-          products {
-            edges {
-              node {
-                id
-                title
-                variants {
-                  edges {
-                    node {
-                      id
-                      availableForSale
-                      compareAtPrice
-                      price
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        """
-      ) {
-        bulkOperation {
-          id
-          status
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-  `
-
   await finishLastOperation()
 
-  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await client.request(productsOperation)
+  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await createOperation()
 
   if (userErrors.length) {
     reporter.panic({
