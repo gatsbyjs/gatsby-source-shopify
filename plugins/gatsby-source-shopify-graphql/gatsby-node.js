@@ -3,7 +3,7 @@ const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
 const { client } = require("./client")
-const { currentOperation, finishLastOperation, completedOperation } = require('./current-operation')
+const { finishLastOperation, completedOperation } = require('./current-operation')
 
 module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
   const nodeHelpers = createNodeHelpers({
@@ -68,10 +68,17 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     console.info(`Polling bulk operation status`)
     resp = await completedOperation(bulkOperation.id)
     console.info(bulkOperation, resp)
-    if (resp.node.status === 'COMPLETED' && resp.node.id === bulkOperation.id) {
+    if (resp.node.status === 'COMPLETED') {
       break
     }
     
+    /* Maybe the interval should be adjustable, because users
+     * with larger data sets could easily wait longer. We could
+     * perhaps detect that the interval being used is too small
+     * based on returned object counts and iteration counts, and
+     * surface feedback to the user suggesting that they increase
+     * the interval.
+     */
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 
