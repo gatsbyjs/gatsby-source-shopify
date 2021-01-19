@@ -64,16 +64,6 @@ module.exports.CREATE_OPERATION = `
                         }
                       }
                     }
-
-                    #######################################################
-                    # FIXME!!
-                    # How do we handle presentment prices?
-                    # Because they are a connection, they are treated
-                    # like a node, but they don't come back with an ID,
-                    # so we don't actually know what they are, since the ID
-                    # is what contains the type info. Can we verify that we
-                    # actually need this data? How do customers use it?
-
                     presentmentPrices {
                       edges {
                         node {
@@ -89,7 +79,6 @@ module.exports.CREATE_OPERATION = `
                         }
                       }
                     }
-                    #######################################################
                   }
                 }
               }
