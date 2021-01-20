@@ -47,7 +47,38 @@ module.exports.CREATE_OPERATION = `
                     id
                     availableForSale
                     compareAtPrice
+                    selectedOptions {
+                      name
+                      value
+                    }
                     price
+                    metafields {
+                      edges {
+                        node {
+                          description
+                          id
+                          key
+                          namespace
+                          value
+                          valueType
+                        }
+                      }
+                    }
+                    presentmentPrices {
+                      edges {
+                        node {
+                          __typename
+                          price {
+                            amount
+                            currencyCode
+                          }
+                          compareAtPrice {
+                            amount
+                            currencyCode
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
