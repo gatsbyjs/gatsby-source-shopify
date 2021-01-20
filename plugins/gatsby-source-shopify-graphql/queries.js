@@ -41,6 +41,7 @@ module.exports.CREATE_OPERATION = `
             node {
               id
               title
+              handle
               variants {
                 edges {
                   node {
