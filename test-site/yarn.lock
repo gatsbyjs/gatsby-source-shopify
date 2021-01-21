@@ -5111,6 +5111,16 @@ gatsby-recipes@^0.8.0:
     xstate "^4.9.1"
     yoga-layout-prebuilt "^1.9.6"
 
+gatsby-source-shopify-experimental@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/gatsby-source-shopify-experimental/-/gatsby-source-shopify-experimental-1.0.0.tgz#252dec5ed01add4c72561f6a1d40ee764089d50b"
+  integrity sha512-Iz34X2kmlbr0Ibv236Frmju38u5U2/Tq7PH+D3MpLXaWVbT4/qPl1MV62ZYD7NgaHaxLIuXPV5Q87lH1GkIbFA==
+  dependencies:
+    dotenv "^8.2.0"
+    gatsby "^2.30.0"
+    gatsby-node-helpers "^1.0.3"
+    graphql-request "^3.4.0"
+
 gatsby-telemetry@^1.9.0:
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/gatsby-telemetry/-/gatsby-telemetry-1.9.0.tgz#91083de2f85c3dc69a38653fddd5e33af0daab75"
