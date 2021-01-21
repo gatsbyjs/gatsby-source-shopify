@@ -10,12 +10,14 @@ function currentOperation() {
 }
 
 async function finishLastOperation() {
-  const { currentBulkOperation } = currentOperation()
+  const { currentBulkOperation } = await currentOperation()
   if (currentBulkOperation && currentBulkOperation.id) {
+    if (currentBulkOperation.status == `COMPLETED`) {
+      return
+    }
     await new Promise(resolve => setTimeout(resolve, 1000))
-    return this.finishLastOperation()
+    return finishLastOperation()
   }
-
 }
 
 /* Maybe the interval should be adjustable, because users
