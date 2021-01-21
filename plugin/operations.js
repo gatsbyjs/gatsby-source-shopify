@@ -1,5 +1,8 @@
+const { createRemoteFileNode } = require("gatsby-source-filesystem")
 const { client } = require("./client")
 const { OPERATION_STATUS_QUERY, OPERATION_BY_ID, CREATE_OPERATION } = require("./queries")
+
+const TYPE_PREFIX = `Shopify`
 
 function createOperation() {
   return client.request(CREATE_OPERATION)
@@ -10,12 +13,59 @@ function currentOperation() {
 }
 
 async function finishLastOperation() {
-  const { currentBulkOperation } = currentOperation()
+  const { currentBulkOperation } = await currentOperation()
   if (currentBulkOperation && currentBulkOperation.id) {
+    if (currentBulkOperation.status == `COMPLETED`) {
+      return
+    }
     await new Promise(resolve => setTimeout(resolve, 1000))
-    return this.finishLastOperation()
+    return finishLastOperation()
   }
+}
 
+async function downloadAndCreateFileNode(
+  { url, nodeId },
+  {
+    createNode,
+    createNodeId,
+    touchNode,
+    store,
+    cache,
+    getCache,
+    reporter,
+    downloadImages,
+  }){
+
+    if (!downloadImages) return undefined
+
+    const mediaDataCacheKey = `${TYPE_PREFIX}__Media__${url}`
+    const cacheMediaData = await cache.get(mediaDataCacheKey)
+
+    if (cacheMediaData) {
+      const fileNodeID = cacheMediaData.fileNodeID
+      touchNode({ nodeId: fileNodeID })
+      return fileNodeID
+    }
+  
+    console.info(`Creating remote file node for node ID: '${nodeId}'`)
+    const fileNode = await createRemoteFileNode({
+      url,
+      store,
+      cache,
+      createNode,
+      createNodeId,
+      getCache,
+      parentNodeId: nodeId,
+      reporter,
+    })
+  
+    if (fileNode) {
+      const fileNodeID = fileNode.id
+      await cache.set(mediaDataCacheKey, { fileNodeID })
+      return fileNodeID
+    }
+  
+    return undefined
 }
 
 /* Maybe the interval should be adjustable, because users
@@ -47,4 +97,6 @@ module.exports = {
   finishLastOperation,
   completedOperation,
   createOperation,
+  downloadAndCreateFileNode,
+  TYPE_PREFIX
 }

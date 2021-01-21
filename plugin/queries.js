@@ -42,10 +42,31 @@ module.exports.CREATE_OPERATION = `
               id
               title
               handle
+              description
+              productType
+              publishedAt
+              media {
+                edges {
+                  node {
+                    __typename
+                    alt
+                    mediaContentType
+                    preview {
+                      image {
+                        id
+                        altText
+                        originalSrc
+                      }
+                    }
+                    status
+                  }
+                }
+              }
               variants {
                 edges {
                   node {
                     id
+                    title
                     availableForSale
                     compareAtPrice
                     selectedOptions {

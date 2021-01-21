@@ -2,12 +2,12 @@ require("dotenv").config()
 const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
-const { finishLastOperation, createOperation, completedOperation } = require('./operations')
+const { finishLastOperation, createOperation, completedOperation, downloadAndCreateFileNode, TYPE_PREFIX } = require('./operations')
 const { nodeBuilder } = require('./node-builder')
 
-module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
+module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest, store, cache, getCache }) {
   const nodeHelpers = createNodeHelpers({
-    typePrefix: `Shopify`,
+    typePrefix: TYPE_PREFIX,
     createNodeId,
     createContentDigest,
   })
@@ -43,10 +43,37 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     objects.push(JSON.parse(line))
   }
 
+  const imageArgs = {
+    createNode: actions.createNode,
+    createNodeId,
+    touchNode: actions.touchNode,
+    store,
+    cache,
+    getCache,
+    reporter,
+    downloadImages: true,
+  }
+  
   for(var i = 0; i < objects.length; i++) {
     const obj = objects[i]
-    const builder = nodeBuilder(nodeHelpers)
-    const node = builder.buildNode(obj)
+    const builder = nodeBuilder(nodeHelpers, imageArgs)
+    let node = null
+    if (obj.__typename == `MediaImage`) {
+      const imageObject = {
+        id: obj.preview.image.id,
+        altText: obj.preview.image.altText,
+        originalSrc: obj.preview.image.originalSrc
+      }
+      node = builder.buildNode(imageObject)
+      const { originalSrc } = node
+      // Creates the image file and links it to the node
+      node.localFile___NODE = await downloadAndCreateFileNode(
+        { url: originalSrc, nodeId: node.id },
+        imageArgs
+      )
+    } else {
+      node = builder.buildNode(obj)
+    }
     actions.createNode(node)
   }
 }
@@ -61,6 +88,7 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type ShopifyProduct implements Node {
       variants: [ShopifyProductVariant]
+      mediaImages: [ShopifyMediaImage]
     }
 
     type ShopifyMetafield implements Node {
@@ -69,6 +97,10 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type ShopifyProductVariantPricePair implements Node {
       productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
+    }
+
+    type ShopifyMediaImage implements Node {
+      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
     }
   `)
 }
@@ -117,6 +149,20 @@ exports.createResolvers = ({ createResolvers }) => {
               }
             },
             type: "ShopifyProductVariant",
+            firstOnly: false,
+          })
+        }
+      },
+      mediaImages: {
+        type: ["ShopifyMediaImage"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productId: { eq: source.shopifyId }
+              }
+            },
+            type: "ShopifyMediaImage",
             firstOnly: false,
           })
         }
