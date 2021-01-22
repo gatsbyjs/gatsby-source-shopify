@@ -2,8 +2,14 @@ const fetch = require('node-fetch')
 
 const baseUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01`
 
-async function shopifyFetch(relativePath, options = {}, retries = 1) {
-  const url = `${baseUrl}${relativePath}`
+function authenticatedUrl(urlString) {
+  const url = new URL(urlString)
+  return url.toString().replace(url.host, `${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${url.host}`)
+}
+
+async function shopifyFetch(path, options = {}, retries = 3) {
+  const url = path.includes(process.env.SHOPIFY_STORE_URL) ? authenticatedUrl(path) : `${baseUrl}${path}`
+  console.log(path, url)
 
   const resp = await fetch(url, options)
 
@@ -13,7 +19,7 @@ async function shopifyFetch(relativePath, options = {}, retries = 1) {
         // rate limit
         const retryAfter = parseFloat(resp.headers.get('Retry-After'))
         await new Promise(resolve => setTimeout(resolve, retryAfter))
-        return shopifyFetch(relativePath, options, retries - 1)
+        return shopifyFetch(path, options, retries - 1)
       }
     }
   }
