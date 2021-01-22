@@ -1,13 +1,12 @@
+const { shopifyFetch } = require('./rest')
 const fetch = require('node-fetch')
 
-const eventsBaseUrl = `https://${process.env.SHOPIFY_ADMIN_API_KEY}:${process.env.SHOPIFY_ADMIN_PASSWORD}@${process.env.SHOPIFY_STORE_URL}/admin/api/2021-01/events.json`
-
 async function fetchEventsSince(date) {
-  const url = `${eventsBaseUrl}?created_at_min=${date.toISOString()}`
-  const resp = await fetch(url)
+  const resp = await shopifyFetch(`/events.json`)//?created_at_min=${date.toISOString()}`
   const json = await resp.json()
 
-  console.info(json)
+  console.info(`Other page info: `, resp.headers.get('link'))
+  console.info(`Rate limit info: `, resp.headers.get(`X-Shopify-Shop-Api-Call-Limit`))
 
   return json
 }
