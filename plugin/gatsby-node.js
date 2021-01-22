@@ -5,9 +5,18 @@ const { createInterface } = require("readline")
 const { finishLastOperation, createProductsOperation, createOrdersOperation, completedOperation } = require('./operations')
 const { nodeBuilder, idPattern } = require('./node-builder')
 
-const operations = [createProductsOperation, createOrdersOperation]
+module.exports.pluginOptionsSchema = ({ Joi }) => {
+  return Joi.object({
+    shopifyConnections: Joi.array().default([]).items(Joi.string().valid('orders'))
+  })
+}
 
-module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }) {
+module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }, pluginOptions) {
+  const operations = [createProductsOperation]
+  if (pluginOptions.shopifyConnections.includes('orders')) {
+    operations.push(createOrdersOperation)
+  }
+
   const nodeHelpers = createNodeHelpers({
     typePrefix: `Shopify`,
     createNodeId,
