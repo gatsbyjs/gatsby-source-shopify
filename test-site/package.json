@@ -4,8 +4,10 @@
   "description": "",
   "main": "gatsby-config.js",
   "scripts": {
-    "start": "gatsby develop",
-    "start:debug": "node --nolazy node_modules/.bin/gatsby develop --inspect-brk"
+    "start": "ENABLE_GATSBY_REFRESH_ENDPOINT=1 gatsby develop",
+    "refresh": "curl -X POST http://localhost:8000/__refresh",
+    "start:debug": "node --nolazy node_modules/.bin/gatsby develop --inspect-brk",
+    "clean": "gatsby clean"
   },
   "author": "",
   "license": "ISC",

@@ -4,6 +4,7 @@ const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
 const { finishLastOperation, createProductsOperation, createOrdersOperation, completedOperation } = require('./operations')
 const { nodeBuilder, idPattern } = require('./node-builder')
+const { fetchEventsSince } = require('./events')
 
 module.exports.pluginOptionsSchema = ({ Joi }) => {
   return Joi.object({
@@ -11,7 +12,8 @@ module.exports.pluginOptionsSchema = ({ Joi }) => {
   })
 }
 
-module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }, pluginOptions) {
+async function sourceAllNodes(gatsbyApi, pluginOptions) {
+  const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi
   const operations = [createProductsOperation]
   if (pluginOptions.shopifyConnections.includes('orders')) {
     operations.push(createOrdersOperation)
@@ -62,6 +64,40 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
       actions.createNode(node)
     }
   }
+
+}
+
+const shopifyNodeTypes = [
+  `ShopifyLineItem`,
+  `ShopifyMetafield`,
+  `ShopifyOrder`,
+  `ShopifyProduct`,
+  `ShopifyProductVariant`,
+  `ShopifyProductVariantPricePair`,
+]
+
+async function sourceChangedNodes(gatsbyApi) {
+  const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`)
+  const eventsPromise = fetchEventsSince(new Date(lastBuildTime))
+  const touchNode = node => gatsbyApi.actions.touchNode({ nodeId: node.id })
+  for (nodeType of shopifyNodeTypes) {
+    gatsbyApi.getNodesByType(nodeType).forEach(touchNode)
+  }
+
+  // We'll do something with this later
+  await eventsPromise
+}
+
+module.exports.sourceNodes = async function(gatsbyApi, pluginOptions) {
+  const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`)
+  if (lastBuildTime) {
+    console.log(`Already did that at ${lastBuildTime}`)
+    await sourceChangedNodes(gatsbyApi, pluginOptions)
+  } else {
+    await sourceAllNodes(gatsbyApi, pluginOptions)
+  }
+
+  await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now())
 }
 
 exports.onCreateNode = function({ node }) {
