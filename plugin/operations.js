@@ -1,8 +1,16 @@
 const { client } = require("./client")
-const { OPERATION_STATUS_QUERY, OPERATION_BY_ID, CREATE_OPERATION } = require("./queries")
+const { OPERATION_STATUS_QUERY, OPERATION_BY_ID, CREATE_PRODUCTS_OPERATION, CREATE_ORDERS_OPERATION } = require("./queries")
 
-function createOperation() {
-  return client.request(CREATE_OPERATION)
+function createOperation(operationQuery) {
+  return client.request(operationQuery)
+}
+
+function createProductsOperation() {
+  return createOperation(CREATE_PRODUCTS_OPERATION)
+}
+
+function createOrdersOperation() {
+  return createOperation(CREATE_ORDERS_OPERATION)
 }
 
 function currentOperation() {
@@ -48,5 +56,6 @@ module.exports = {
   currentOperation,
   finishLastOperation,
   completedOperation,
-  createOperation,
+  createProductsOperation,
+  createOrdersOperation
 }

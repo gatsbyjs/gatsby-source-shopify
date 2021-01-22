@@ -52,5 +52,6 @@ function nodeBuilder(nodeHelpers) {
 }
 
 module.exports =  {
-  nodeBuilder
+  nodeBuilder,
+  idPattern: pattern,
 }
