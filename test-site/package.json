@@ -4,7 +4,8 @@
   "description": "",
   "main": "gatsby-config.js",
   "scripts": {
-    "start": "gatsby develop"
+    "start": "gatsby develop",
+    "start:debug": "node --nolazy node_modules/.bin/gatsby develop --inspect-brk"
   },
   "author": "",
   "license": "ISC",
