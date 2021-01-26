@@ -51,12 +51,9 @@ async function finishLastOperation() {
  * the interval.
  */
 async function completedOperation(operationId, interval = 1000) {
-  console.log(operationId);
   const operation = await client.request(OPERATION_BY_ID, {
     id: operationId,
   });
-
-  console.info(operation);
 
   if (operation.node.status === "COMPLETED") {
     return operation;

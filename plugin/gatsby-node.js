@@ -12,6 +12,7 @@ const {
 } = require("./operations");
 const { nodeBuilder, idPattern } = require("./node-builder");
 const { fetchDestroyEventsSince } = require("./events");
+const { createRemoteFileNode } = require("gatsby-source-filesystem");
 
 module.exports.pluginOptionsSchema = ({ Joi }) => {
   return Joi.object({
@@ -48,7 +49,6 @@ async function sourceFromOperation(op, gatsbyApi) {
   }
 
   let resp = await completedOperation(bulkOperation.id);
-  console.info(`Received completed operation`, resp);
 
   if (parseInt(resp.node.objectCount, 10) === 0) {
     gatsbyApi.reporter.info(`No data was returned for this operation`, resp);
@@ -143,11 +143,30 @@ module.exports.sourceNodes = async function (gatsbyApi, pluginOptions) {
   await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now());
 };
 
-exports.onCreateNode = function ({ node }) {
+exports.onCreateNode = async function ({
+  actions: { createNode },
+  getCache,
+  createNodeId,
+  node,
+}) {
   if (node.internal.type === `ShopifyLineItem` && node.product) {
     const [_match, _type, shopifyId] = node.product.id.match(idPattern);
     node.productId = shopifyId;
     delete node.product;
+  }
+
+  if (node.internal.type === `ShopifyProductImage`) {
+    // create a FileNode in Gatsby that gatsby-transformer-sharp will create optimized images for
+    const fileNode = await createRemoteFileNode({
+      // the url of the remote image to generate a node for
+      url: node.src,
+      getCache,
+      createNode,
+      createNodeId,
+      parentNodeId: node.id,
+    });
+
+    node.localFile = fileNode.id;
   }
 };
 
@@ -177,6 +196,13 @@ exports.createSchemaCustomization = ({ actions }) => {
 
     type ShopifyLineItem implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+    }
+
+    type ShopifyProductImage implements Node {
+      altText: String
+      originalSrc: String!
+      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+      localFile: File @link
     }
   `);
 };
@@ -230,6 +256,20 @@ exports.createResolvers = ({ createResolvers }) => {
       },
     },
     ShopifyProduct: {
+      images: {
+        type: ["ShopifyProductImage"],
+        resolve(source, args, context, info) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productId: { eq: source.shopifyId },
+              },
+            },
+            type: "ShopifyProductImage",
+            firstOnly: false,
+          });
+        },
+      },
       variants: {
         type: ["ShopifyProductVariant"],
         resolve(source, args, context, info) {

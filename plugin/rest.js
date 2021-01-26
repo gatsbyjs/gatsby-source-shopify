@@ -16,7 +16,6 @@ async function shopifyFetch(path, options = {}, retries = 3) {
   const url = path.includes(process.env.SHOPIFY_STORE_URL)
     ? authenticatedUrl(path)
     : `${baseUrl}${path}`;
-  console.log(path, url);
 
   const resp = await fetch(url, options);
 
