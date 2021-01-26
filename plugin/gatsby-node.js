@@ -89,7 +89,7 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
 
   const operations = [incrementalProducts]
   if (pluginOptions.shopifyConnections.includes('orders')) {
-    operations.push(createOrdersOperation)
+    operations.push(incrementalOrders)
   }
 
   await Promise.all(
