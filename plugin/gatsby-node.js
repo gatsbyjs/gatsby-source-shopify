@@ -68,9 +68,7 @@ async function sourceAllNodes(gatsbyApi, pluginOptions) {
     operations.push(createOrdersOperation)
   }
 
-  for await (const op of operations) {
-    await sourceFromOperation(op, gatsbyApi)
-  }
+  await Promise.all(operations.map(op => sourceFromOperation(op, gatsbyApi)))
 }
 
 const shopifyNodeTypes = [
