@@ -23,5 +23,8 @@
     "gatsby-node-helpers": "^1.0.3",
     "graphql-request": "^3.4.0",
     "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.2.1"
   }
 }
