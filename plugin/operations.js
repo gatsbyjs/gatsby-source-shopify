@@ -1,8 +1,16 @@
 const { client } = require("./client")
-const { OPERATION_STATUS_QUERY, OPERATION_BY_ID, CREATE_PRODUCTS_OPERATION, CREATE_ORDERS_OPERATION } = require("./queries")
+const { OPERATION_STATUS_QUERY, OPERATION_BY_ID, CREATE_PRODUCTS_OPERATION, CREATE_ORDERS_OPERATION, incrementalProductsQuery, incrementalOrdersQuery } = require("./queries")
 
 function createOperation(operationQuery) {
   return client.request(operationQuery)
+}
+
+function incrementalProducts(date) {
+  return createOperation(incrementalProductsQuery(date))
+}
+
+function incrementalOrders(date) {
+  return createOperation(incrementalOrdersQuery(date))
 }
 
 function createProductsOperation() {
@@ -57,5 +65,7 @@ module.exports = {
   finishLastOperation,
   completedOperation,
   createProductsOperation,
-  createOrdersOperation
+  createOrdersOperation,
+  incrementalProducts,
+  incrementalOrders,
 }

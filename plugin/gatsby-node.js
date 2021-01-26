@@ -2,8 +2,10 @@ require("dotenv").config()
 const fetch = require("node-fetch")
 const { createNodeHelpers } = require("gatsby-node-helpers")
 const { createInterface } = require("readline")
-const { finishLastOperation, createProductsOperation, createOrdersOperation, completedOperation } = require('./operations')
+const { finishLastOperation, createProductsOperation, createOrdersOperation, completedOperation, incrementalProducts, incrementalOrders } = require('./operations')
 const { nodeBuilder, idPattern } = require('./node-builder')
+const { fetchDestroyEventsSince } = require('./events')
+const { client } = require('./client')
 
 module.exports.pluginOptionsSchema = ({ Joi }) => {
   return Joi.object({
@@ -11,11 +13,8 @@ module.exports.pluginOptionsSchema = ({ Joi }) => {
   })
 }
 
-module.exports.sourceNodes = async function({ reporter, actions, createNodeId, createContentDigest }, pluginOptions) {
-  const operations = [createProductsOperation]
-  if (pluginOptions.shopifyConnections.includes('orders')) {
-    operations.push(createOrdersOperation)
-  }
+async function sourceFromOperation(op, gatsbyApi) {
+  const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi
 
   const nodeHelpers = createNodeHelpers({
     typePrefix: `Shopify`,
@@ -23,45 +22,113 @@ module.exports.sourceNodes = async function({ reporter, actions, createNodeId, c
     createContentDigest,
   })
 
-  for await (const op of operations) {
-    await finishLastOperation()
+  await finishLastOperation()
 
-    const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await op()
+  const { bulkOperationRunQuery: { userErrors, bulkOperation} } = await op()
 
-    if (userErrors.length) {
-      reporter.panic({
-        context: {
-          sourceMessage: `Couldn't perform bulk operation`
+  if (userErrors.length) {
+    reporter.panic({
+      context: {
+        sourceMessage: `Couldn't perform bulk operation`
+      }
+    }, ...userErrors)
+  }
+
+  let resp = await completedOperation(bulkOperation.id)
+  console.info(`Received completed operation`, resp)
+
+  if (parseInt(resp.node.objectCount, 10) === 0) {
+    gatsbyApi.reporter.info(`No data was returned for this operation`, resp)
+    return
+  }
+
+  const results = await fetch(resp.node.url)
+
+  const rl = createInterface({
+    input: results.body,
+    crlfDelay: Infinity,
+  })
+
+  const objects = []
+  for await (const line of rl) {
+    objects.push(JSON.parse(line))
+  }
+
+  for(var i = 0; i < objects.length; i++) {
+    const obj = objects[i]
+    const builder = nodeBuilder(nodeHelpers)
+    const node = builder.buildNode(obj)
+    actions.createNode(node)
+  }
+}
+
+async function sourceAllNodes(gatsbyApi, pluginOptions) {
+  const operations = [createProductsOperation]
+  if (pluginOptions.shopifyConnections.includes('orders')) {
+    operations.push(createOrdersOperation)
+  }
+
+  await Promise.all(operations.map(op => sourceFromOperation(op, gatsbyApi)))
+}
+
+const shopifyNodeTypes = [
+  `ShopifyLineItem`,
+  `ShopifyMetafield`,
+  `ShopifyOrder`,
+  `ShopifyProduct`,
+  `ShopifyProductVariant`,
+  `ShopifyProductVariantPricePair`,
+]
+
+async function sourceChangedNodes(gatsbyApi, pluginOptions) {
+  const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`)
+  const touchNode = node => gatsbyApi.actions.touchNode({ nodeId: node.id })
+  for (nodeType of shopifyNodeTypes) {
+    gatsbyApi.getNodesByType(nodeType).forEach(touchNode)
+  }
+
+  const operations = [incrementalProducts]
+  if (pluginOptions.shopifyConnections.includes('orders')) {
+    operations.push(incrementalOrders)
+  }
+
+  await Promise.all(
+    operations.map(op =>
+      sourceFromOperation(() =>
+        op(new Date(lastBuildTime).toISOString()),
+        gatsbyApi
+      )
+    )
+  )
+
+  const destroyEvents = await fetchDestroyEventsSince(new Date(lastBuildTime))
+  if (destroyEvents.length) {
+    for (nodeType of shopifyNodeTypes) {
+      gatsbyApi.getNodesByType(nodeType).forEach(node => {
+        /* This is currently untested because all the destroy events for the
+         * swag store are for products that this POC has never sourced!
+         *
+         * Also to consider: what about cascade delete? If a product is removed
+         * here, do we clean up variants, metafields, images, etc?
+         */
+        const event = destroyEvents.find(e => e.subject_id === parseInt(node.shopifyId, 10) && node.internal.type === `Shopify${e.subject_type}`)
+        if (event) {
+          actions.deleteNode({ node })
         }
-      }, ...userErrors)
-    }
-
-    let resp = await completedOperation(bulkOperation.id)
-
-    const results = await fetch(resp.node.url)
-
-    /* FIXME
-    * Getting warnings about this being experimental.
-    * We want to read the stream one line at a time, but let's make
-    * sure to do it in the recommended way.
-    */
-    const rl = createInterface({
-      input: results.body,
-      crlfDelay: Infinity,
-    })
-
-    const objects = []
-    for await (const line of rl) {
-      objects.push(JSON.parse(line))
-    }
-
-    for(var i = 0; i < objects.length; i++) {
-      const obj = objects[i]
-      const builder = nodeBuilder(nodeHelpers)
-      const node = builder.buildNode(obj)
-      actions.createNode(node)
+      })
     }
   }
+}
+
+module.exports.sourceNodes = async function(gatsbyApi, pluginOptions) {
+  const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`)
+  if (lastBuildTime) {
+    await sourceChangedNodes(gatsbyApi, pluginOptions)
+  } else {
+    await sourceAllNodes(gatsbyApi, pluginOptions)
+  }
+
+  await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now())
 }
 
 exports.onCreateNode = function({ node }) {
