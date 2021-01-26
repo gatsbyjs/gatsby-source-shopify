@@ -52,9 +52,9 @@ function bulkOperationQuery(query) {
   `
 }
 
-const ORDERS_QUERY = `
+const ordersQuery = date => `
 {
-  orders {
+  orders${date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``} {
     edges {
       node {
         id
@@ -81,9 +81,9 @@ const ORDERS_QUERY = `
 }
 `
 
-const PRODUCTS_QUERY = `
+const productsQuery = date => `
 {
-  products {
+  products${date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``} {
     edges {
       node {
         id
@@ -136,5 +136,8 @@ const PRODUCTS_QUERY = `
 }
 `
 
-module.exports.CREATE_PRODUCTS_OPERATION = bulkOperationQuery(PRODUCTS_QUERY)
-module.exports.CREATE_ORDERS_OPERATION = bulkOperationQuery(ORDERS_QUERY)
+module.exports.CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery())
+module.exports.CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery())
+
+module.exports.incrementalProductsQuery = date => bulkOperationQuery(productsQuery(date))
+module.exports.incrementalOrdersQuery = date => bulkOperationQuery(ordersQuery(date))

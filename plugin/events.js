@@ -1,11 +1,9 @@
 const { shopifyFetch } = require('./rest')
 const fetch = require('node-fetch')
 
-async function fetchEventsSince(date) {
-  let resp = await shopifyFetch(`/events.json?limit=250`)//?created_at_min=${date.toISOString()}`
+async function fetchDestroyEventsSince(date) {
+  let resp = await shopifyFetch(`/events.json?limit=250&verb=destroy&created_at_min=${date.toISOString()}`)
 
-  console.info(`Other page info: `, resp.headers.get('link'))
-  console.info(`Rate limit info: `, resp.headers.get(`X-Shopify-Shop-Api-Call-Limit`))
   const { events } = await resp.json()
 
   while(true) {
@@ -40,5 +38,5 @@ async function fetchEventsSince(date) {
 }
 
 module.exports = {
-  fetchEventsSince
+  fetchDestroyEventsSince
 }
