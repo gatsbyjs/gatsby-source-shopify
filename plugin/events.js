@@ -20,8 +20,6 @@ async function fetchDestroyEventsSince(date) {
       }
     })
 
-    console.info(pageLinks)
-
     const nextPage = pageLinks.find(l => l.rel === `next`)
 
     if (nextPage) {
@@ -29,7 +27,6 @@ async function fetchDestroyEventsSince(date) {
       const { events: nextEvents } = await resp.json()
       events.push(...nextEvents)
     } else {
-      console.info(`We're done here`)
       break
     }
   }
