@@ -1,4 +1,4 @@
-  module.exports.OPERATION_STATUS_QUERY = `
+module.exports.OPERATION_STATUS_QUERY = `
     query {
       currentBulkOperation {
         id
@@ -12,7 +12,7 @@
         partialDataUrl
       }
     }
-  `
+  `;
 module.exports.OPERATION_BY_ID = `
 query OPERATION_BY_ID($id: ID!) {
   node(id: $id) {
@@ -29,7 +29,7 @@ query OPERATION_BY_ID($id: ID!) {
     }
   }
 }
-`
+`;
 
 function bulkOperationQuery(query) {
   return `
@@ -49,12 +49,14 @@ function bulkOperationQuery(query) {
       }
     }
   }
-  `
+  `;
 }
 
-const ordersQuery = date => `
+const ordersQuery = (date) => `
 {
-  orders${date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``} {
+  orders${
+    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+  } {
     edges {
       node {
         id
@@ -79,11 +81,13 @@ const ordersQuery = date => `
     }
   }
 }
-`
+`;
 
-const productsQuery = date => `
+const productsQuery = (date) => `
 {
-  products${date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``} {
+  products${
+    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+  } {
     edges {
       node {
         id
@@ -134,10 +138,12 @@ const productsQuery = date => `
     }
   }
 }
-`
+`;
 
-module.exports.CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery())
-module.exports.CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery())
+module.exports.CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
+module.exports.CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
 
-module.exports.incrementalProductsQuery = date => bulkOperationQuery(productsQuery(date))
-module.exports.incrementalOrdersQuery = date => bulkOperationQuery(ordersQuery(date))
+module.exports.incrementalProductsQuery = (date) =>
+  bulkOperationQuery(productsQuery(date));
+module.exports.incrementalOrdersQuery = (date) =>
+  bulkOperationQuery(ordersQuery(date));
