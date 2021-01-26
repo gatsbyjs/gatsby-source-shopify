@@ -21,6 +21,7 @@
     "dotenv": "^8.2.0",
     "gatsby": "^2.30.0",
     "gatsby-node-helpers": "^1.0.3",
+    "gatsby-source-filesystem": "^2.10.0",
     "graphql-request": "^3.4.0",
     "node-fetch": "^2.6.1"
   },

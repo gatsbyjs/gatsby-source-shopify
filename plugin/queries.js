@@ -93,12 +93,26 @@ const productsQuery = (date) => `
         id
         title
         handle
+        description
+        productType
+        publishedAt
+        images {
+          edges {
+            node {
+              id
+              altText
+              src
+              originalSrc
+            }
+          }
+        }
         variants {
           edges {
             node {
               id
               availableForSale
               compareAtPrice
+              title
               selectedOptions {
                 name
                 value
