@@ -62,13 +62,8 @@ async function sourceFromOperation(op, gatsbyApi) {
     crlfDelay: Infinity,
   });
 
-  const objects = [];
   for await (const line of rl) {
-    objects.push(JSON.parse(line));
-  }
-
-  for (var i = 0; i < objects.length; i++) {
-    const obj = objects[i];
+    const obj = JSON.parse(line);
     const builder = nodeBuilder(nodeHelpers);
     const node = builder.buildNode(obj);
     actions.createNode(node);
