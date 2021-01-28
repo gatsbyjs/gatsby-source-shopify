@@ -130,21 +130,6 @@ const productsQuery = (date) => `
                   }
                 }
               }
-              presentmentPrices {
-                edges {
-                  node {
-                    __typename
-                    price {
-                      amount
-                      currencyCode
-                    }
-                    compareAtPrice {
-                      amount
-                      currencyCode
-                    }
-                  }
-                }
-              }
             }
           }
         }
