@@ -25,17 +25,26 @@ module.exports.pluginOptionsSchema = ({ Joi }) => {
 async function sourceFromOperation(op, gatsbyApi) {
   const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
 
+  const functionPattern = /^function (.*)\(/;
+  const [_, opName] = op.toString().match(functionPattern);
+  console.time(opName);
   const nodeHelpers = createNodeHelpers({
     typePrefix: `Shopify`,
     createNodeId,
     createContentDigest,
   });
 
+  const finishLastOp = `Checked for operations in progress`;
+  console.time(finishLastOp);
   await finishLastOperation();
+  console.timeEnd(finishLastOp);
 
+  const initiating = `Initiated bulk operation query`;
+  console.time(initiating);
   const {
     bulkOperationRunQuery: { userErrors, bulkOperation },
   } = await op();
+  console.timeEnd(initiating);
 
   if (userErrors.length) {
     reporter.panic(
@@ -48,7 +57,10 @@ async function sourceFromOperation(op, gatsbyApi) {
     );
   }
 
+  const waitForCurrentOp = `Completed bulk operation`;
+  console.time(waitForCurrentOp);
   let resp = await completedOperation(bulkOperation.id);
+  console.timeEnd(waitForCurrentOp);
 
   if (parseInt(resp.node.objectCount, 10) === 0) {
     gatsbyApi.reporter.info(`No data was returned for this operation`, resp);
@@ -64,11 +76,25 @@ async function sourceFromOperation(op, gatsbyApi) {
 
   const builder = nodeBuilder(nodeHelpers, gatsbyApi);
 
+  const creatingNodes = `Created nodes from bulk operation`;
+  console.time(creatingNodes);
+
+  const promises = [];
   for await (const line of rl) {
     const obj = JSON.parse(line);
-    const node = await builder.buildNode(obj);
-    actions.createNode(node);
+    promises.push(builder.buildNode(obj));
   }
+
+  await Promise.all(
+    promises.map(async (promise) => {
+      const node = await promise;
+      actions.createNode(node);
+    })
+  );
+
+  console.timeEnd(creatingNodes);
+
+  console.timeEnd(opName);
 }
 
 async function sourceAllNodes(gatsbyApi, pluginOptions) {
