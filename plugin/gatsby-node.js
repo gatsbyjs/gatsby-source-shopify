@@ -1,109 +1,121 @@
-require("dotenv").config();
 const fetch = require("node-fetch");
 const { createNodeHelpers } = require("gatsby-node-helpers");
 const { createInterface } = require("readline");
-const {
-  finishLastOperation,
-  createProductsOperation,
-  createOrdersOperation,
-  completedOperation,
-  incrementalProducts,
-  incrementalOrders,
-} = require("./operations");
+const { createOperations } = require("./operations");
 const { nodeBuilder } = require("./node-builder");
-const { fetchDestroyEventsSince } = require("./events");
-const { createRemoteFileNode } = require("gatsby-source-filesystem");
+const { eventsApi } = require("./events");
 
 module.exports.pluginOptionsSchema = ({ Joi }) => {
   return Joi.object({
+    apiKey: Joi.string().required(),
+    password: Joi.string().required(),
+    storeUrl: Joi.string().required(),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders")),
   });
 };
 
-async function sourceFromOperation(op, gatsbyApi) {
-  const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
+function makeSourceFromOperation(
+  finishLastOperation,
+  completedOperation,
+  gatsbyApi
+) {
+  return async function sourceFromOperation(op) {
+    const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
 
-  const functionPattern = /^function (.*)\(/;
-  const [_, opName] = op.toString().match(functionPattern);
-  console.time(opName);
-  const nodeHelpers = createNodeHelpers({
-    typePrefix: `Shopify`,
-    createNodeId,
-    createContentDigest,
-  });
+    const operationComplete = `Sourced from bulk operation`;
+    console.time(operationComplete);
+    const nodeHelpers = createNodeHelpers({
+      typePrefix: `Shopify`,
+      createNodeId,
+      createContentDigest,
+    });
 
-  const finishLastOp = `Checked for operations in progress`;
-  console.time(finishLastOp);
-  await finishLastOperation();
-  console.timeEnd(finishLastOp);
+    const finishLastOp = `Checked for operations in progress`;
+    console.time(finishLastOp);
+    await finishLastOperation();
+    console.timeEnd(finishLastOp);
 
-  const initiating = `Initiated bulk operation query`;
-  console.time(initiating);
-  const {
-    bulkOperationRunQuery: { userErrors, bulkOperation },
-  } = await op();
-  console.timeEnd(initiating);
+    const initiating = `Initiated bulk operation query`;
+    console.time(initiating);
+    const {
+      bulkOperationRunQuery: { userErrors, bulkOperation },
+    } = await op();
+    console.timeEnd(initiating);
 
-  if (userErrors.length) {
-    reporter.panic(
-      {
-        context: {
-          sourceMessage: `Couldn't perform bulk operation`,
+    if (userErrors.length) {
+      reporter.panic(
+        {
+          context: {
+            sourceMessage: `Couldn't perform bulk operation`,
+          },
         },
-      },
-      ...userErrors
+        ...userErrors
+      );
+    }
+
+    const waitForCurrentOp = `Completed bulk operation`;
+    console.time(waitForCurrentOp);
+    let resp = await completedOperation(bulkOperation.id);
+    console.timeEnd(waitForCurrentOp);
+
+    if (parseInt(resp.node.objectCount, 10) === 0) {
+      gatsbyApi.reporter.info(`No data was returned for this operation`, resp);
+      console.timeEnd(operationComplete);
+      return;
+    }
+
+    const results = await fetch(resp.node.url);
+
+    const rl = createInterface({
+      input: results.body,
+      crlfDelay: Infinity,
+    });
+
+    const builder = nodeBuilder(nodeHelpers, gatsbyApi);
+
+    const creatingNodes = `Created nodes from bulk operation`;
+    console.time(creatingNodes);
+
+    const promises = [];
+    for await (const line of rl) {
+      const obj = JSON.parse(line);
+      promises.push(builder.buildNode(obj));
+    }
+
+    await Promise.all(
+      promises.map(async (promise) => {
+        const node = await promise;
+        actions.createNode(node);
+      })
     );
-  }
 
-  const waitForCurrentOp = `Completed bulk operation`;
-  console.time(waitForCurrentOp);
-  let resp = await completedOperation(bulkOperation.id);
-  console.timeEnd(waitForCurrentOp);
+    console.timeEnd(creatingNodes);
 
-  if (parseInt(resp.node.objectCount, 10) === 0) {
-    gatsbyApi.reporter.info(`No data was returned for this operation`, resp);
-    return;
-  }
-
-  const results = await fetch(resp.node.url);
-
-  const rl = createInterface({
-    input: results.body,
-    crlfDelay: Infinity,
-  });
-
-  const builder = nodeBuilder(nodeHelpers, gatsbyApi);
-
-  const creatingNodes = `Created nodes from bulk operation`;
-  console.time(creatingNodes);
-
-  const promises = [];
-  for await (const line of rl) {
-    const obj = JSON.parse(line);
-    promises.push(builder.buildNode(obj));
-  }
-
-  await Promise.all(
-    promises.map(async (promise) => {
-      const node = await promise;
-      actions.createNode(node);
-    })
-  );
-
-  console.timeEnd(creatingNodes);
-
-  console.timeEnd(opName);
+    console.timeEnd(operationComplete);
+  };
 }
 
 async function sourceAllNodes(gatsbyApi, pluginOptions) {
+  const {
+    createProductsOperation,
+    createOrdersOperation,
+    finishLastOperation,
+    completedOperation,
+  } = createOperations(pluginOptions);
+
   const operations = [createProductsOperation];
   if (pluginOptions.shopifyConnections.includes("orders")) {
     operations.push(createOrdersOperation);
   }
 
-  await Promise.all(operations.map((op) => sourceFromOperation(op, gatsbyApi)));
+  const sourceFromOperation = makeSourceFromOperation(
+    finishLastOperation,
+    completedOperation,
+    gatsbyApi
+  );
+  await Promise.all(operations.map(sourceFromOperation));
 }
 
 const shopifyNodeTypes = [
@@ -116,6 +128,12 @@ const shopifyNodeTypes = [
 ];
 
 async function sourceChangedNodes(gatsbyApi, pluginOptions) {
+  const {
+    incrementalProducts,
+    incrementalOrders,
+    finishLastOperation,
+    completedOperation,
+  } = createOperations(pluginOptions);
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   const touchNode = (node) => gatsbyApi.actions.touchNode({ nodeId: node.id });
   for (nodeType of shopifyNodeTypes) {
@@ -127,15 +145,20 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
     operations.push(incrementalOrders);
   }
 
-  await Promise.all(
-    operations.map((op) =>
-      sourceFromOperation(
-        () => op(new Date(lastBuildTime).toISOString()),
-        gatsbyApi
-      )
-    )
+  const sourceFromOperation = makeSourceFromOperation(
+    finishLastOperation,
+    completedOperation,
+    gatsbyApi
   );
 
+  const deltaSource = (op) => {
+    const deltaOp = () => op(new Date(lastBuildTime).toISOString());
+    return sourceFromOperation(deltaOp);
+  };
+
+  await Promise.all(operations.map(deltaSource));
+
+  const { fetchDestroyEventsSince } = eventsApi(pluginOptions);
   const destroyEvents = await fetchDestroyEventsSince(new Date(lastBuildTime));
   if (destroyEvents.length) {
     for (nodeType of shopifyNodeTypes) {
