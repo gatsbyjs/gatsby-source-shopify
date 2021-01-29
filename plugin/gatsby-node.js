@@ -10,7 +10,7 @@ const {
   incrementalProducts,
   incrementalOrders,
 } = require("./operations");
-const { nodeBuilder, idPattern } = require("./node-builder");
+const { nodeBuilder } = require("./node-builder");
 const { fetchDestroyEventsSince } = require("./events");
 const { createRemoteFileNode } = require("gatsby-source-filesystem");
 
@@ -62,10 +62,11 @@ async function sourceFromOperation(op, gatsbyApi) {
     crlfDelay: Infinity,
   });
 
+  const builder = nodeBuilder(nodeHelpers, gatsbyApi);
+
   for await (const line of rl) {
     const obj = JSON.parse(line);
-    const builder = nodeBuilder(nodeHelpers);
-    const node = builder.buildNode(obj);
+    const node = await builder.buildNode(obj);
     actions.createNode(node);
   }
 }
@@ -141,33 +142,6 @@ module.exports.sourceNodes = async function (gatsbyApi, pluginOptions) {
   }
 
   await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now());
-};
-
-exports.onCreateNode = async function ({
-  actions: { createNode },
-  getCache,
-  createNodeId,
-  node,
-}) {
-  if (node.internal.type === `ShopifyLineItem` && node.product) {
-    const [_match, _type, shopifyId] = node.product.id.match(idPattern);
-    node.productId = shopifyId;
-    delete node.product;
-  }
-
-  if (node.internal.type === `ShopifyProductImage`) {
-    // create a FileNode in Gatsby that gatsby-transformer-sharp will create optimized images for
-    const fileNode = await createRemoteFileNode({
-      // the url of the remote image to generate a node for
-      url: node.src,
-      getCache,
-      createNode,
-      createNodeId,
-      parentNodeId: node.id,
-    });
-
-    node.localFile = fileNode.id;
-  }
 };
 
 exports.createSchemaCustomization = ({ actions }) => {

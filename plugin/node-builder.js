@@ -1,3 +1,5 @@
+const { createRemoteFileNode } = require("gatsby-source-filesystem");
+
 // 'gid://shopify/Metafield/6936247730264'
 const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
@@ -11,23 +13,47 @@ function attachParentId(obj) {
   }
 }
 
-function buildFromId(obj, getFactory) {
+async function buildFromId(obj, getFactory, gatsbyApi) {
   const [_, remoteType, shopifyId] = obj.id.match(pattern);
+  const {
+    createNodeId,
+    actions: { createNode },
+    getCache,
+  } = gatsbyApi;
 
   attachParentId(obj);
+
+  /* FIXME
+   * This is becoming littered with type checks.
+   * To clean this up, maybe we can introduce a
+   * mapping of custom processor functions.
+   * ~sslotsky
+   */
+  if (remoteType === `ShopifyLineItem` && obj.product) {
+    const [_match, _type, shopifyId] = obj.product.id.match(pattern);
+    obj.productId = shopifyId;
+    delete obj.product;
+  }
 
   const Node = getFactory(remoteType);
-  return Node({ ...obj, id: shopifyId });
+  const node = Node({ ...obj, id: shopifyId });
+
+  if (remoteType === `ProductImage`) {
+    const fileNode = await createRemoteFileNode({
+      url: node.src,
+      getCache,
+      createNode,
+      createNodeId,
+      parentNodeId: node.id,
+    });
+
+    node.localFile = fileNode.id;
+  }
+
+  return node;
 }
 
-function buildFromTypename(obj, getFactory) {
-  attachParentId(obj);
-
-  const Node = getFactory(obj.__typename);
-  return Node(obj);
-}
-
-function nodeBuilder(nodeHelpers) {
+function nodeBuilder(nodeHelpers, gatsbyApi) {
   const factoryMap = {};
   const getFactory = (remoteType) => {
     if (!factoryMap[remoteType]) {
@@ -37,13 +63,9 @@ function nodeBuilder(nodeHelpers) {
   };
 
   return {
-    buildNode(obj) {
+    async buildNode(obj) {
       if (obj.id) {
-        return buildFromId(obj, getFactory);
-      }
-
-      if (obj.__typename) {
-        return buildFromTypename(obj, getFactory);
+        return await buildFromId(obj, getFactory, gatsbyApi);
       }
 
       throw new Error(`Cannot create a node without type information`);
@@ -53,5 +75,4 @@ function nodeBuilder(nodeHelpers) {
 
 module.exports = {
   nodeBuilder,
-  idPattern: pattern,
 };
