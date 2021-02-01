@@ -13,12 +13,44 @@ function attachParentId(obj) {
   }
 }
 
+const downloadImageAndCreateFileNode = async (
+  { url, nodeId },
+  { createNode, createNodeId, touchNode, cache, getCache }
+) => {
+  const mediaDataCacheKey = `Shopify__Media__${url}`;
+  const cacheMediaData = await cache.get(mediaDataCacheKey);
+
+  if (cacheMediaData) {
+    const fileNodeID = cacheMediaData.fileNodeID;
+    touchNode({ nodeId: fileNodeID });
+    return fileNodeID;
+  }
+
+  const fileNode = await createRemoteFileNode({
+    url,
+    cache,
+    createNode,
+    createNodeId,
+    getCache,
+    parentNodeId: nodeId,
+  });
+
+  if (fileNode) {
+    const fileNodeID = fileNode.id;
+    await cache.set(mediaDataCacheKey, { fileNodeID });
+    return fileNodeID;
+  }
+
+  return undefined;
+};
+
 async function buildFromId(obj, getFactory, gatsbyApi) {
   const [_, remoteType, shopifyId] = obj.id.match(pattern);
   const {
     createNodeId,
-    actions: { createNode },
+    actions: { createNode, touchNode },
     getCache,
+    cache,
   } = gatsbyApi;
 
   attachParentId(obj);
@@ -39,15 +71,21 @@ async function buildFromId(obj, getFactory, gatsbyApi) {
   const node = Node({ ...obj, id: shopifyId });
 
   if (remoteType === `ProductImage`) {
-    const fileNode = await createRemoteFileNode({
-      url: node.src,
-      getCache,
-      createNode,
-      createNodeId,
-      parentNodeId: node.id,
-    });
+    const fileNodeId = await downloadImageAndCreateFileNode(
+      {
+        url: node.originalSrc && node.originalSrc.split(`?`)[0],
+        nodeId: node.id,
+      },
+      {
+        createNode,
+        createNodeId,
+        touchNode,
+        getCache,
+        cache,
+      }
+    );
 
-    node.localFile = fileNode.id;
+    node.localFile = fileNodeId;
   }
 
   return node;
