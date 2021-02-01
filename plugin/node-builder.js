@@ -15,7 +15,7 @@ function attachParentId(obj) {
 
 const downloadImageAndCreateFileNode = async (
   { url, nodeId },
-  { createNode, createNodeId, touchNode, cache, getCache }
+  { createNode, createNodeId, touchNode, cache, getCache, store, reporter }
 ) => {
   const mediaDataCacheKey = `Shopify__Media__${url}`;
   const cacheMediaData = await cache.get(mediaDataCacheKey);
@@ -33,6 +33,8 @@ const downloadImageAndCreateFileNode = async (
     createNodeId,
     getCache,
     parentNodeId: nodeId,
+    store,
+    reporter,
   });
 
   if (fileNode) {
@@ -51,6 +53,8 @@ async function buildFromId(obj, getFactory, gatsbyApi) {
     actions: { createNode, touchNode },
     getCache,
     cache,
+    store,
+    reporter,
   } = gatsbyApi;
 
   attachParentId(obj);
@@ -82,6 +86,8 @@ async function buildFromId(obj, getFactory, gatsbyApi) {
         touchNode,
         getCache,
         cache,
+        store,
+        reporter,
       }
     );
 
