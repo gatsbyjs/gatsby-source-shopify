@@ -96,6 +96,16 @@ const productsQuery = (date) => `
         description
         productType
         publishedAt
+        priceRangeV2 {
+          maxVariantPrice {
+            amount
+            currencyCode
+          }
+          minVariantPrice {
+            amount
+            currencyCode
+          }
+        }
         images {
           edges {
             node {
