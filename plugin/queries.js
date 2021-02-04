@@ -91,11 +91,18 @@ const productsQuery = (date) => `
     edges {
       node {
         id
+        storefrontId
         title
         handle
         description
         productType
         publishedAt
+        options {
+          id
+          name
+          position
+          values
+        }
         priceRangeV2 {
           maxVariantPrice {
             amount
@@ -120,6 +127,7 @@ const productsQuery = (date) => `
           edges {
             node {
               id
+              storefrontId
               availableForSale
               compareAtPrice
               title
