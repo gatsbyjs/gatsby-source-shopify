@@ -123,6 +123,7 @@ const shopifyNodeTypes = [
   `ShopifyMetafield`,
   `ShopifyOrder`,
   `ShopifyProduct`,
+  `ShopifyProductImage`,
   `ShopifyProductVariant`,
   `ShopifyProductVariantPricePair`,
 ];
