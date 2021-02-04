@@ -5,10 +5,10 @@ const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
 function attachParentId(obj) {
   if (obj.__parentId) {
-    const [_, remoteType, id] = obj.__parentId.match(pattern);
+    const [fullId, remoteType] = obj.__parentId.match(pattern);
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = id;
+    obj[idField] = fullId;
     delete obj.__parentId;
   }
 }
@@ -47,7 +47,7 @@ const downloadImageAndCreateFileNode = async (
 };
 
 async function buildFromId(obj, getFactory, gatsbyApi) {
-  const [_, remoteType, shopifyId] = obj.id.match(pattern);
+  const [shopifyId, remoteType] = obj.id.match(pattern);
   const {
     createNodeId,
     actions: { createNode, touchNode },
@@ -66,8 +66,7 @@ async function buildFromId(obj, getFactory, gatsbyApi) {
    * ~sslotsky
    */
   if (remoteType === `ShopifyLineItem` && obj.product) {
-    const [_match, _type, shopifyId] = obj.product.id.match(pattern);
-    obj.productId = shopifyId;
+    obj.productId = obj.product.id;
     delete obj.product;
   }
 
