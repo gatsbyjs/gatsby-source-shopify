@@ -1,11 +1,17 @@
-const fetch = require("node-fetch");
-const { createNodeHelpers } = require("gatsby-node-helpers");
-const { createInterface } = require("readline");
-const { createOperations } = require("./operations");
-const { nodeBuilder } = require("./node-builder");
-const { eventsApi } = require("./events");
+import fetch from "node-fetch";
+import { createNodeHelpers } from "gatsby-node-helpers";
+import { createInterface } from "readline";
+import { createOperations, BulkOperationRunQueryResponse } from "./operations";
+import { nodeBuilder } from "./node-builder";
+import { eventsApi } from "./events";
+import {
+  CreateResolversArgs,
+  CreateSchemaCustomizationArgs,
+  PluginOptionsSchemaArgs,
+  SourceNodesArgs,
+} from "gatsby";
 
-module.exports.pluginOptionsSchema = ({ Joi }) => {
+module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
   return Joi.object({
     apiKey: Joi.string().required(),
     password: Joi.string().required(),
@@ -17,11 +23,15 @@ module.exports.pluginOptionsSchema = ({ Joi }) => {
 };
 
 function makeSourceFromOperation(
-  finishLastOperation,
-  completedOperation,
-  gatsbyApi
+  finishLastOperation: () => Promise<void>,
+  completedOperation: (
+    id: string
+  ) => Promise<{ node: { objectCount: string; url: string } }>,
+  gatsbyApi: SourceNodesArgs
 ) {
-  return async function sourceFromOperation(op) {
+  return async function sourceFromOperation(
+    op: () => Promise<BulkOperationRunQueryResponse>
+  ) {
     const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
 
     const operationComplete = `Sourced from bulk operation`;
@@ -47,11 +57,12 @@ function makeSourceFromOperation(
     if (userErrors.length) {
       reporter.panic(
         {
+          id: ``, // TODO: decide on some error IDs
           context: {
             sourceMessage: `Couldn't perform bulk operation`,
           },
         },
-        ...userErrors
+        userErrors
       );
     }
 
@@ -61,7 +72,7 @@ function makeSourceFromOperation(
     console.timeEnd(waitForCurrentOp);
 
     if (parseInt(resp.node.objectCount, 10) === 0) {
-      gatsbyApi.reporter.info(`No data was returned for this operation`, resp);
+      reporter.info(`No data was returned for this operation`);
       console.timeEnd(operationComplete);
       return;
     }
@@ -97,7 +108,10 @@ function makeSourceFromOperation(
   };
 }
 
-async function sourceAllNodes(gatsbyApi, pluginOptions) {
+async function sourceAllNodes(
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions
+) {
   const {
     createProductsOperation,
     createOrdersOperation,
@@ -106,7 +120,7 @@ async function sourceAllNodes(gatsbyApi, pluginOptions) {
   } = createOperations(pluginOptions);
 
   const operations = [createProductsOperation];
-  if (pluginOptions.shopifyConnections.includes("orders")) {
+  if (pluginOptions.shopifyConnections?.includes("orders")) {
     operations.push(createOrdersOperation);
   }
 
@@ -128,7 +142,10 @@ const shopifyNodeTypes = [
   `ShopifyProductVariantPricePair`,
 ];
 
-async function sourceChangedNodes(gatsbyApi, pluginOptions) {
+async function sourceChangedNodes(
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions
+) {
   const {
     incrementalProducts,
     incrementalOrders,
@@ -136,13 +153,14 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
     completedOperation,
   } = createOperations(pluginOptions);
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
-  const touchNode = (node) => gatsbyApi.actions.touchNode({ nodeId: node.id });
-  for (nodeType of shopifyNodeTypes) {
+  const touchNode = (node: { id: string }) =>
+    gatsbyApi.actions.touchNode({ nodeId: node.id });
+  for (const nodeType of shopifyNodeTypes) {
     gatsbyApi.getNodesByType(nodeType).forEach(touchNode);
   }
 
   const operations = [incrementalProducts];
-  if (pluginOptions.shopifyConnections.includes("orders")) {
+  if (pluginOptions.shopifyConnections?.includes("orders")) {
     operations.push(incrementalOrders);
   }
 
@@ -152,8 +170,10 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
     gatsbyApi
   );
 
-  const deltaSource = (op) => {
-    const deltaOp = () => op(new Date(lastBuildTime).toISOString());
+  const deltaSource = (
+    op: (date: Date) => Promise<BulkOperationRunQueryResponse>
+  ) => {
+    const deltaOp = () => op(new Date(lastBuildTime));
     return sourceFromOperation(deltaOp);
   };
 
@@ -162,7 +182,7 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
   const { fetchDestroyEventsSince } = eventsApi(pluginOptions);
   const destroyEvents = await fetchDestroyEventsSince(new Date(lastBuildTime));
   if (destroyEvents.length) {
-    for (nodeType of shopifyNodeTypes) {
+    for (const nodeType of shopifyNodeTypes) {
       gatsbyApi.getNodesByType(nodeType).forEach((node) => {
         /* This is currently untested because all the destroy events for the
          * swag store are for products that this POC has never sourced!
@@ -171,19 +191,22 @@ async function sourceChangedNodes(gatsbyApi, pluginOptions) {
          * here, do we clean up variants, metafields, images, etc?
          */
         const event = destroyEvents.find(
-          (e) =>
-            e.subject_id === parseInt(node.shopifyId, 10) &&
+          (e: { subject_id: number; subject_type: string }) =>
+            e.subject_id === parseInt(node.shopifyId as string, 10) &&
             node.internal.type === `Shopify${e.subject_type}`
         );
         if (event) {
-          actions.deleteNode({ node });
+          gatsbyApi.actions.deleteNode({ node });
         }
       });
     }
   }
 }
 
-module.exports.sourceNodes = async function (gatsbyApi, pluginOptions) {
+export async function sourceNodes(
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions
+) {
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   if (lastBuildTime) {
     await sourceChangedNodes(gatsbyApi, pluginOptions);
@@ -192,9 +215,11 @@ module.exports.sourceNodes = async function (gatsbyApi, pluginOptions) {
   }
 
   await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now());
-};
+}
 
-exports.createSchemaCustomization = ({ actions }) => {
+exports.createSchemaCustomization = ({
+  actions,
+}: CreateSchemaCustomizationArgs) => {
   actions.createTypes(`
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
@@ -231,12 +256,17 @@ exports.createSchemaCustomization = ({ actions }) => {
   `);
 };
 
-exports.createResolvers = ({ createResolvers }) => {
+/**
+ * FIXME
+ *
+ * What are the types for the resolve functions?
+ */
+exports.createResolvers = ({ createResolvers }: CreateResolversArgs) => {
   createResolvers({
     ShopifyOrder: {
       lineItems: {
         type: ["ShopifyLineItem"],
-        resolve(source, args, context, info) {
+        resolve(source: any, _args: any, context: any, _info: any) {
           return context.nodeModel.runQuery({
             query: {
               filter: {
@@ -252,7 +282,7 @@ exports.createResolvers = ({ createResolvers }) => {
     ShopifyProductVariant: {
       presentmentPrices: {
         type: ["ShopifyProductVariantPricePair"],
-        resolve(source, args, context, info) {
+        resolve(source: any, _args: any, context: any, _info: any) {
           return context.nodeModel.runQuery({
             query: {
               filter: {
@@ -266,7 +296,7 @@ exports.createResolvers = ({ createResolvers }) => {
       },
       metafields: {
         type: ["ShopifyMetafield"],
-        resolve(source, args, context, info) {
+        resolve(source: any, _args: any, context: any, _info: any) {
           return context.nodeModel.runQuery({
             query: {
               filter: {
@@ -282,7 +312,7 @@ exports.createResolvers = ({ createResolvers }) => {
     ShopifyProduct: {
       images: {
         type: ["ShopifyProductImage"],
-        resolve(source, args, context, info) {
+        resolve(source: any, _args: any, context: any, _info: any) {
           return context.nodeModel.runQuery({
             query: {
               filter: {
@@ -296,7 +326,7 @@ exports.createResolvers = ({ createResolvers }) => {
       },
       variants: {
         type: ["ShopifyProductVariant"],
-        resolve(source, args, context, info) {
+        resolve(source: any, _args: any, context: any, _info: any) {
           return context.nodeModel.runQuery({
             query: {
               filter: {

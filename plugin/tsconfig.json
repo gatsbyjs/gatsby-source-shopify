@@ -1,0 +1,20 @@
+{
+  "include": ["src/**/*.ts", "types"],
+  "exclude": ["node_modules", "test/**/*.ts"],
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "module": "commonjs",
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "outDir": "./",
+    "target": "es2017",
+    "declaration": true,
+    "lib": ["es2017", "dom", "esnext.asynciterable"]
+  }
+}

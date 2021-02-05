@@ -1,4 +1,4 @@
-module.exports.OPERATION_STATUS_QUERY = `
+export const OPERATION_STATUS_QUERY = `
     query {
       currentBulkOperation {
         id
@@ -13,7 +13,8 @@ module.exports.OPERATION_STATUS_QUERY = `
       }
     }
   `;
-module.exports.OPERATION_BY_ID = `
+
+export const OPERATION_BY_ID = `
 query OPERATION_BY_ID($id: ID!) {
   node(id: $id) {
     ... on BulkOperation {
@@ -31,7 +32,7 @@ query OPERATION_BY_ID($id: ID!) {
 }
 `;
 
-function bulkOperationQuery(query) {
+function bulkOperationQuery(query: string) {
   return `
     mutation {
       bulkOperationRunQuery(
@@ -52,10 +53,12 @@ function bulkOperationQuery(query) {
   `;
 }
 
-const ordersQuery = (date) => `
+const ordersQuery = (dateString?: string) => `
 {
   orders${
-    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+    dateString
+      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      : ``
   } {
     edges {
       node {
@@ -83,10 +86,12 @@ const ordersQuery = (date) => `
 }
 `;
 
-const productsQuery = (date) => `
+const productsQuery = (dateString?: string) => `
 {
   products${
-    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+    dateString
+      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      : ``
   } {
     edges {
       node {
@@ -157,10 +162,10 @@ const productsQuery = (date) => `
 }
 `;
 
-module.exports.CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
-module.exports.CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
+export const CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
+export const CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
 
-module.exports.incrementalProductsQuery = (date) =>
-  bulkOperationQuery(productsQuery(date));
-module.exports.incrementalOrdersQuery = (date) =>
-  bulkOperationQuery(ordersQuery(date));
+export const incrementalProductsQuery = (date: Date) =>
+  bulkOperationQuery(productsQuery(date.toISOString()));
+export const incrementalOrdersQuery = (date: Date) =>
+  bulkOperationQuery(ordersQuery(date.toISOString()));

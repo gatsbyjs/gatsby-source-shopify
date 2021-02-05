@@ -1,6 +1,5 @@
 {
   "name": "gatsby-source-shopify-workspace",
-  "main": "index.js",
   "private": "true",
   "workspaces": [
     "./plugin",
