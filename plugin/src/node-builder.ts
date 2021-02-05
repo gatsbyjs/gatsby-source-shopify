@@ -5,14 +5,9 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 // 'gid://shopify/Metafield/6936247730264'
 const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
-interface Record {
-  id: string;
-  __parentId?: string;
-}
-
-function attachParentId<T extends Record>(obj: T) {
+function attachParentId(obj: Record<string, any>) {
   if (obj.__parentId) {
-    const [fullId, remoteType] = obj.__parentId.match(pattern);
+    const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
     obj[idField] = fullId;
@@ -21,8 +16,14 @@ function attachParentId<T extends Record>(obj: T) {
 }
 
 const downloadImageAndCreateFileNode = async (
-  { url, nodeId },
-  { createNode, createNodeId, touchNode, cache, store, reporter }
+  { url, nodeId }: { url: string; nodeId: string },
+  {
+    actions: { createNode, touchNode },
+    createNodeId,
+    cache,
+    store,
+    reporter,
+  }: SourceNodesArgs
 ) => {
   const mediaDataCacheKey = `Shopify__Media__${url}`;
   const cacheMediaData = await cache.get(mediaDataCacheKey);
@@ -52,24 +53,12 @@ const downloadImageAndCreateFileNode = async (
   return undefined;
 };
 
-interface LineItem extends Record {
-  product: Record;
-  productId: string;
-}
-
-async function buildFromId<T extends Record>(
-  obj: T,
+async function buildFromId(
+  obj: Record<string, any>,
   getFactory: (remoteType: string) => (node: IdentifiableRecord) => NodeInput,
   gatsbyApi: SourceNodesArgs
 ) {
-  const [shopifyId, remoteType] = obj.id.match(pattern);
-  const {
-    createNodeId,
-    actions: { createNode, touchNode },
-    cache,
-    store,
-    reporter,
-  } = gatsbyApi;
+  const [shopifyId, remoteType] = obj.id.match(pattern) || [];
 
   attachParentId(obj);
 
@@ -80,8 +69,8 @@ async function buildFromId<T extends Record>(
    * ~sslotsky
    */
   if (remoteType === `ShopifyLineItem`) {
-    const lineItem = (obj as unknown) as LineItem;
-    lineItem.productId = lineItem.product.id;
+    const lineItem = obj;
+    lineItem.productId = lineItem.product.id || "";
     delete lineItem.product;
   }
 
@@ -95,14 +84,7 @@ async function buildFromId<T extends Record>(
         url: src && src.split(`?`)[0],
         nodeId: node.id,
       },
-      {
-        createNode,
-        createNodeId,
-        touchNode,
-        cache,
-        store,
-        reporter,
-      }
+      gatsbyApi
     );
 
     node.localFile = fileNodeId;
@@ -115,7 +97,9 @@ export function nodeBuilder(
   nodeHelpers: NodeHelpers,
   gatsbyApi: SourceNodesArgs
 ) {
-  const factoryMap = {};
+  const factoryMap: {
+    [k: string]: (node: IdentifiableRecord) => NodeInput;
+  } = {};
   const getFactory = (remoteType: string) => {
     if (!factoryMap[remoteType]) {
       factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType);
@@ -124,7 +108,7 @@ export function nodeBuilder(
   };
 
   return {
-    async buildNode<T extends Record>(obj: T) {
+    async buildNode(obj: Record<string, any>) {
       if (obj.id) {
         return await buildFromId(obj, getFactory, gatsbyApi);
       }

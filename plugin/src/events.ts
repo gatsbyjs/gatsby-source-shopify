@@ -20,10 +20,10 @@ export function eventsApi(options: ShopifyPluginOptions) {
         const pageLinks: { url: string; rel: string }[] = paginationInfo
           .split(",")
           .map((pageData: string) => {
-            const match = pageData.match(/<(.*)>; rel="(.*)"/);
+            const [url, rel] = pageData.match(/<(.*)>; rel="(.*)"/) || ["", ""];
             return {
-              url: match[1],
-              rel: match[2],
+              url,
+              rel,
             };
           });
 

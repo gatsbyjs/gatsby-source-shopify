@@ -32,7 +32,7 @@ query OPERATION_BY_ID($id: ID!) {
 }
 `;
 
-function bulkOperationQuery(query) {
+function bulkOperationQuery(query: string) {
   return `
     mutation {
       bulkOperationRunQuery(
@@ -53,10 +53,12 @@ function bulkOperationQuery(query) {
   `;
 }
 
-const ordersQuery = (date?: Date) => `
+const ordersQuery = (dateString?: string) => `
 {
   orders${
-    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+    dateString
+      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      : ``
   } {
     edges {
       node {
@@ -84,10 +86,12 @@ const ordersQuery = (date?: Date) => `
 }
 `;
 
-const productsQuery = (date?: Date) => `
+const productsQuery = (dateString?: string) => `
 {
   products${
-    date ? `(query: "created_at:>=${date} OR updated_at:>=${date}")` : ``
+    dateString
+      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      : ``
   } {
     edges {
       node {
@@ -162,6 +166,6 @@ export const CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
 export const CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
 
 export const incrementalProductsQuery = (date: Date) =>
-  bulkOperationQuery(productsQuery(date));
+  bulkOperationQuery(productsQuery(date.toISOString()));
 export const incrementalOrdersQuery = (date: Date) =>
-  bulkOperationQuery(ordersQuery(date));
+  bulkOperationQuery(ordersQuery(date.toISOString()));

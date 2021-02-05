@@ -9,6 +9,15 @@ import {
   incrementalOrdersQuery,
 } from "./queries";
 
+export interface BulkOperationRunQueryResponse {
+  bulkOperationRunQuery: {
+    userErrors: Error[];
+    bulkOperation: {
+      id: string;
+    };
+  };
+}
+
 export function createOperations(options: ShopifyPluginOptions) {
   const client = createClient(options);
 
@@ -16,11 +25,13 @@ export function createOperations(options: ShopifyPluginOptions) {
     return client.request(OPERATION_STATUS_QUERY);
   }
 
-  function createOperation(operationQuery: string) {
+  function createOperation(
+    operationQuery: string
+  ): Promise<BulkOperationRunQueryResponse> {
     return client.request(operationQuery);
   }
 
-  async function finishLastOperation() {
+  async function finishLastOperation(): Promise<void> {
     const { currentBulkOperation } = await currentOperation();
     if (currentBulkOperation && currentBulkOperation.id) {
       if (currentBulkOperation.status == `COMPLETED`) {
@@ -37,7 +48,10 @@ export function createOperations(options: ShopifyPluginOptions) {
    * surface feedback to the user suggesting that they increase
    * the interval.
    */
-  async function completedOperation(operationId: string, interval = 1000) {
+  async function completedOperation(
+    operationId: string,
+    interval = 1000
+  ): Promise<{ node: { objectCount: string; url: string } }> {
     const operation = await client.request(OPERATION_BY_ID, {
       id: operationId,
     });
