@@ -3,9 +3,8 @@
   "version": "1.9.0-rc.0",
   "description": "",
   "scripts": {
-    "start": "gatsby develop",
-    "build": "tsc",
-    "start:debug": "node --nolazy node_modules/.bin/gatsby develop --inspect-brk"
+    "watch": "tsc-watch",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -26,6 +25,7 @@
     "typescript": "^4.1.3"
   },
   "devDependencies": {
-    "prettier": "^2.2.1"
+    "prettier": "^2.2.1",
+    "tsc-watch": "^4.2.9"
   }
 }
