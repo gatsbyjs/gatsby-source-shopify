@@ -1,4 +1,3 @@
-import { PluginOptions } from "gatsby";
 import { GraphQLClient } from "graphql-request";
 
 const adminUrl = (options: ShopifyPluginOptions) =>
