@@ -18,6 +18,8 @@ export interface BulkOperationRunQueryResponse {
   };
 }
 
+const finishedStatuses = [`COMPLETED`, `FAILED`];
+
 export function createOperations(options: ShopifyPluginOptions) {
   const client = createClient(options);
 
@@ -34,9 +36,10 @@ export function createOperations(options: ShopifyPluginOptions) {
   async function finishLastOperation(): Promise<void> {
     const { currentBulkOperation } = await currentOperation();
     if (currentBulkOperation && currentBulkOperation.id) {
-      if (currentBulkOperation.status == `COMPLETED`) {
+      if (finishedStatuses.includes(currentBulkOperation.status)) {
         return;
       }
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return finishLastOperation();
     }
@@ -55,6 +58,10 @@ export function createOperations(options: ShopifyPluginOptions) {
     const operation = await client.request(OPERATION_BY_ID, {
       id: operationId,
     });
+
+    if (operation.node.status === "FAILED") {
+      throw operation;
+    }
 
     if (operation.node.status === "COMPLETED") {
       return operation;
