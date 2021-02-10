@@ -34,77 +34,89 @@ function makeSourceFromOperation(
   ) {
     const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
 
-    const operationComplete = `Sourced from bulk operation`;
-    console.time(operationComplete);
-    const nodeHelpers = createNodeHelpers({
-      typePrefix: `Shopify`,
-      createNodeId,
-      createContentDigest,
-    });
+    try {
+      const operationComplete = `Sourced from bulk operation`;
+      console.time(operationComplete);
+      const nodeHelpers = createNodeHelpers({
+        typePrefix: `Shopify`,
+        createNodeId,
+        createContentDigest,
+      });
 
-    const finishLastOp = `Checked for operations in progress`;
-    console.time(finishLastOp);
-    await finishLastOperation();
-    console.timeEnd(finishLastOp);
+      const finishLastOp = `Checked for operations in progress`;
+      console.time(finishLastOp);
+      await finishLastOperation();
+      console.timeEnd(finishLastOp);
 
-    const initiating = `Initiated bulk operation query`;
-    console.time(initiating);
-    const {
-      bulkOperationRunQuery: { userErrors, bulkOperation },
-    } = await op();
-    console.timeEnd(initiating);
+      const initiating = `Initiated bulk operation query`;
+      console.time(initiating);
+      const {
+        bulkOperationRunQuery: { userErrors, bulkOperation },
+      } = await op();
+      console.timeEnd(initiating);
 
-    if (userErrors.length) {
+      if (userErrors.length) {
+        reporter.panic(
+          {
+            id: ``, // TODO: decide on some error IDs
+            context: {
+              sourceMessage: `Couldn't perform bulk operation`,
+            },
+          },
+          userErrors
+        );
+      }
+
+      const waitForCurrentOp = `Completed bulk operation`;
+      console.time(waitForCurrentOp);
+      let resp = await completedOperation(bulkOperation.id);
+      console.timeEnd(waitForCurrentOp);
+
+      if (parseInt(resp.node.objectCount, 10) === 0) {
+        reporter.info(`No data was returned for this operation`);
+        console.timeEnd(operationComplete);
+        return;
+      }
+
+      const results = await fetch(resp.node.url);
+
+      const rl = createInterface({
+        input: results.body,
+        crlfDelay: Infinity,
+      });
+
+      const builder = nodeBuilder(nodeHelpers, gatsbyApi);
+
+      const creatingNodes = `Created nodes from bulk operation`;
+      console.time(creatingNodes);
+
+      const promises = [];
+      for await (const line of rl) {
+        const obj = JSON.parse(line);
+        promises.push(builder.buildNode(obj));
+      }
+
+      await Promise.all(
+        promises.map(async (promise) => {
+          const node = await promise;
+          actions.createNode(node);
+        })
+      );
+
+      console.timeEnd(creatingNodes);
+
+      console.timeEnd(operationComplete);
+    } catch (e) {
       reporter.panic(
         {
-          id: ``, // TODO: decide on some error IDs
+          id: ``,
           context: {
-            sourceMessage: `Couldn't perform bulk operation`,
+            sourceMessage: `Could not source from bulk operation`,
           },
         },
-        userErrors
+        e
       );
     }
-
-    const waitForCurrentOp = `Completed bulk operation`;
-    console.time(waitForCurrentOp);
-    let resp = await completedOperation(bulkOperation.id);
-    console.timeEnd(waitForCurrentOp);
-
-    if (parseInt(resp.node.objectCount, 10) === 0) {
-      reporter.info(`No data was returned for this operation`);
-      console.timeEnd(operationComplete);
-      return;
-    }
-
-    const results = await fetch(resp.node.url);
-
-    const rl = createInterface({
-      input: results.body,
-      crlfDelay: Infinity,
-    });
-
-    const builder = nodeBuilder(nodeHelpers, gatsbyApi);
-
-    const creatingNodes = `Created nodes from bulk operation`;
-    console.time(creatingNodes);
-
-    const promises = [];
-    for await (const line of rl) {
-      const obj = JSON.parse(line);
-      promises.push(builder.buildNode(obj));
-    }
-
-    await Promise.all(
-      promises.map(async (promise) => {
-        const node = await promise;
-        actions.createNode(node);
-      })
-    );
-
-    console.timeEnd(creatingNodes);
-
-    console.timeEnd(operationComplete);
   };
 }
 
