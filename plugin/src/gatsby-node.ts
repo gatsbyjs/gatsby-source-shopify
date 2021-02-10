@@ -11,6 +11,8 @@ import {
   SourceNodesArgs,
 } from "gatsby";
 
+const LAST_SHOPIFY_BULK_OPERATION = `LAST_SHOPIFY_BULK_OPERATION`;
+
 module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
   return Joi.object({
     apiKey: Joi.string().required(),
@@ -32,7 +34,13 @@ function makeSourceFromOperation(
   return async function sourceFromOperation(
     op: () => Promise<BulkOperationRunQueryResponse>
   ) {
-    const { reporter, actions, createNodeId, createContentDigest } = gatsbyApi;
+    const {
+      reporter,
+      actions,
+      createNodeId,
+      createContentDigest,
+      cache,
+    } = gatsbyApi;
 
     try {
       const operationComplete = `Sourced from bulk operation`;
@@ -69,6 +77,9 @@ function makeSourceFromOperation(
 
       const waitForCurrentOp = `Completed bulk operation`;
       console.time(waitForCurrentOp);
+
+      await cache.set(LAST_SHOPIFY_BULK_OPERATION, bulkOperation.id);
+
       let resp = await completedOperation(bulkOperation.id);
       console.timeEnd(waitForCurrentOp);
 
@@ -106,6 +117,8 @@ function makeSourceFromOperation(
       console.timeEnd(creatingNodes);
 
       console.timeEnd(operationComplete);
+
+      await cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
     } catch (e) {
       reporter.panic(
         {
@@ -219,6 +232,19 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
+  const lastOperationId = await gatsbyApi.cache.get(
+    LAST_SHOPIFY_BULK_OPERATION
+  );
+
+  if (lastOperationId) {
+    console.info(`Cancelling last operation`);
+    const cancelled = await createOperations(pluginOptions).cancelOperation(
+      lastOperationId
+    );
+    console.info(cancelled);
+    await gatsbyApi.cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
+  }
+
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   if (lastBuildTime) {
     await sourceChangedNodes(gatsbyApi, pluginOptions);

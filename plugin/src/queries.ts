@@ -32,6 +32,20 @@ query OPERATION_BY_ID($id: ID!) {
 }
 `;
 
+export const CANCEL_OPERATION = `
+mutation CANCEL_OPERATION($id: ID!) {
+  bulkOperationCancel(id: $id) {
+    bulkOperation {
+      status
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`;
+
 function bulkOperationQuery(query: string) {
   return `
     mutation {
