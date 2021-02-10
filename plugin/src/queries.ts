@@ -97,11 +97,61 @@ const productsQuery = (dateString?: string) => `
       node {
         id
         storefrontId
-        title
-        handle
+        createdAt
         description
-        productType
-        publishedAt
+        descriptionHtml
+        featuredImage {
+          id
+          altText
+          height
+          width
+          originalSrc
+          transformedSrc
+        }
+        featuredMedia {
+          alt
+          mediaContentType
+          mediaErrors {
+            details
+          }
+          preview {
+            image {
+              id
+              altText
+              height
+              width
+              originalSrc
+              transformedSrc
+            }
+            status
+          }
+          status
+        }
+        feedback {
+          details {
+            app {
+              id
+            }
+            link {
+              label
+              url
+            }
+            messages {
+              field
+              message
+            }
+          }
+          summary
+        }
+        giftCardTemplateSuffix
+        handle
+        hasOnlyDefaultVariant
+        hasOutOfStockVariants
+        isGiftCard
+        legacyResourceId
+        mediaCount
+        onlineStorePreviewUrl
+        onlineStoreUrl
         options {
           id
           name
@@ -118,6 +168,23 @@ const productsQuery = (dateString?: string) => `
             currencyCode
           }
         }
+        productType
+        publishedAt
+        requiresSellingPlan
+        sellingPlanGroupCount
+        seo {
+          description
+          title
+        }
+        status
+        tags
+        templateSuffix
+        title
+        totalInventory
+        totalVariants
+        tracksInventory
+        updatedAt
+        vendor
         images {
           edges {
             node {
