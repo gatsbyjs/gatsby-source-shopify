@@ -56,7 +56,8 @@ const downloadImageAndCreateFileNode = async (
 async function buildFromId(
   obj: Record<string, any>,
   getFactory: (remoteType: string) => (node: IdentifiableRecord) => NodeInput,
-  gatsbyApi: SourceNodesArgs
+  gatsbyApi: SourceNodesArgs,
+  { useRemoteImages }: ShopifyPluginOptions
 ) {
   const [shopifyId, remoteType] = obj.id.match(pattern) || [];
 
@@ -77,7 +78,7 @@ async function buildFromId(
   const Node = getFactory(remoteType);
   const node = Node({ ...obj, id: shopifyId });
 
-  if (remoteType === `ProductImage`) {
+  if (!useRemoteImages && remoteType === `ProductImage`) {
     const src = node.originalSrc as string;
     const fileNodeId = await downloadImageAndCreateFileNode(
       {
@@ -95,7 +96,8 @@ async function buildFromId(
 
 export function nodeBuilder(
   nodeHelpers: NodeHelpers,
-  gatsbyApi: SourceNodesArgs
+  gatsbyApi: SourceNodesArgs,
+  options: ShopifyPluginOptions
 ) {
   const factoryMap: {
     [k: string]: (node: IdentifiableRecord) => NodeInput;
@@ -110,7 +112,7 @@ export function nodeBuilder(
   return {
     async buildNode(obj: Record<string, any>) {
       if (obj.id) {
-        return await buildFromId(obj, getFactory, gatsbyApi);
+        return await buildFromId(obj, getFactory, gatsbyApi, options);
       }
 
       throw new Error(`Cannot create a node without type information`);

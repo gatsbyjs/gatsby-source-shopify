@@ -10,12 +10,20 @@ import {
   PluginOptionsSchemaArgs,
   SourceNodesArgs,
 } from "gatsby";
+import {
+  generateImageData,
+  IGatsbyImageHelperArgs,
+  IImage,
+  ImageFormat,
+} from "gatsby-plugin-image";
+import { getGatsbyImageResolver } from "gatsby-plugin-image/graphql-utils";
 
 module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
   return Joi.object({
     apiKey: Joi.string().required(),
     password: Joi.string().required(),
     storeUrl: Joi.string().required(),
+    useRemoteImages: Joi.boolean(),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders")),
@@ -27,7 +35,8 @@ function makeSourceFromOperation(
   completedOperation: (
     id: string
   ) => Promise<{ node: { objectCount: string; url: string } }>,
-  gatsbyApi: SourceNodesArgs
+  gatsbyApi: SourceNodesArgs,
+  options: ShopifyPluginOptions
 ) {
   return async function sourceFromOperation(
     op: () => Promise<BulkOperationRunQueryResponse>
@@ -85,7 +94,7 @@ function makeSourceFromOperation(
         crlfDelay: Infinity,
       });
 
-      const builder = nodeBuilder(nodeHelpers, gatsbyApi);
+      const builder = nodeBuilder(nodeHelpers, gatsbyApi, options);
 
       const creatingNodes = `Created nodes from bulk operation`;
       console.time(creatingNodes);
@@ -139,7 +148,8 @@ async function sourceAllNodes(
   const sourceFromOperation = makeSourceFromOperation(
     finishLastOperation,
     completedOperation,
-    gatsbyApi
+    gatsbyApi,
+    pluginOptions
   );
   await Promise.all(operations.map(sourceFromOperation));
 }
@@ -179,7 +189,8 @@ async function sourceChangedNodes(
   const sourceFromOperation = makeSourceFromOperation(
     finishLastOperation,
     completedOperation,
-    gatsbyApi
+    gatsbyApi,
+    pluginOptions
   );
 
   const deltaSource = (
@@ -268,13 +279,80 @@ exports.createSchemaCustomization = ({
   `);
 };
 
+const validFormats = new Set(["jpg", "png", "webp"]);
+type ImageLayout = "constrained" | "fixed" | "fullWidth";
+async function resolveGatsbyImageData(
+  image: Node & { width: number; height: number; originalSrc: string },
+  {
+    formats = ["auto", "webp"],
+    layout = "constrained",
+    ...options
+  }: { formats: Array<ImageFormat>; layout: ImageLayout }
+) {
+  let [basename, version] = image.originalSrc.split("?");
+
+  const dot = basename.lastIndexOf(".");
+  let ext = "";
+  if (dot !== -1) {
+    ext = basename.slice(dot + 1);
+    basename = basename.slice(0, dot);
+  }
+
+  const generateImageSource: IGatsbyImageHelperArgs["generateImageSource"] = (
+    filename,
+    width,
+    height,
+    toFormat
+  ): IImage => {
+    if (!validFormats.has(toFormat)) {
+      console.warn(
+        `${toFormat} is not a valid format. Valid formats are: ${[
+          ...validFormats,
+        ].join(", ")}`
+      );
+      toFormat = "jpg";
+    }
+    let suffix = "";
+    if (toFormat === ext) {
+      suffix = `.${toFormat}`;
+    } else {
+      suffix = `.${ext}.${toFormat}`;
+    }
+
+    return {
+      width,
+      height,
+      format: toFormat,
+      src: `${filename}_${width}x${height}_crop_center${suffix}?${version}`,
+    };
+  };
+  const sourceMetadata = {
+    width: image.width,
+    height: image.height,
+    format: ext as ImageFormat,
+  };
+
+  return generateImageData({
+    ...options,
+    formats,
+    layout,
+    sourceMetadata,
+    pluginName: `gatsby-source-shopify-experimental`,
+    filename: basename,
+    generateImageSource,
+  });
+}
+
 /**
  * FIXME
  *
  * What are the types for the resolve functions?
  */
-exports.createResolvers = ({ createResolvers }: CreateResolversArgs) => {
-  createResolvers({
+exports.createResolvers = (
+  { createResolvers }: CreateResolversArgs,
+  { useRemoteImages }: ShopifyPluginOptions
+) => {
+  const resolvers: Record<string, unknown> = {
     ShopifyOrder: {
       lineItems: {
         type: ["ShopifyLineItem"],
@@ -351,5 +429,13 @@ exports.createResolvers = ({ createResolvers }: CreateResolversArgs) => {
         },
       },
     },
-  });
+  };
+
+  if (useRemoteImages) {
+    resolvers.ShopifyProductImage = {
+      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+    };
+  }
+
+  createResolvers(resolvers);
 };

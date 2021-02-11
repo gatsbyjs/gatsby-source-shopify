@@ -192,6 +192,8 @@ const productsQuery = (dateString?: string) => `
               altText
               src
               originalSrc
+              width
+              height
             }
           }
         }
