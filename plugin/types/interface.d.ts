@@ -2,6 +2,6 @@ interface ShopifyPluginOptions {
   apiKey: string;
   password: string;
   storeUrl: string;
-  useRemoteImages?: boolean;
+  downloadImages?: boolean;
   shopifyConnections?: string[];
 }
