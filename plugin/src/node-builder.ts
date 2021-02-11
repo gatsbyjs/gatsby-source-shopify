@@ -79,10 +79,10 @@ async function buildFromId(
   const node = Node({ ...obj, id: shopifyId });
 
   if (downloadImages && remoteType === `ProductImage`) {
-    const src = node.originalSrc as string;
+    const url = node.originalSrc as string;
     const fileNodeId = await downloadImageAndCreateFileNode(
       {
-        url: src,
+        url,
         nodeId: node.id,
       },
       gatsbyApi
