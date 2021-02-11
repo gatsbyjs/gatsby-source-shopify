@@ -5,6 +5,7 @@ import {
   OPERATION_BY_ID,
   CREATE_PRODUCTS_OPERATION,
   CREATE_ORDERS_OPERATION,
+  CANCEL_OPERATION,
   incrementalProductsQuery,
   incrementalOrdersQuery,
 } from "./queries";
@@ -18,7 +19,7 @@ export interface BulkOperationRunQueryResponse {
   };
 }
 
-const finishedStatuses = [`COMPLETED`, `FAILED`];
+const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`];
 
 export function createOperations(options: ShopifyPluginOptions) {
   const client = createClient(options);
@@ -35,6 +36,7 @@ export function createOperations(options: ShopifyPluginOptions) {
 
   async function finishLastOperation(): Promise<void> {
     const { currentBulkOperation } = await currentOperation();
+    console.info(currentBulkOperation);
     if (currentBulkOperation && currentBulkOperation.id) {
       if (finishedStatuses.includes(currentBulkOperation.status)) {
         return;
@@ -59,6 +61,7 @@ export function createOperations(options: ShopifyPluginOptions) {
       id: operationId,
     });
 
+    console.info(operation);
     if (operation.node.status === "FAILED") {
       throw operation;
     }
@@ -87,6 +90,10 @@ export function createOperations(options: ShopifyPluginOptions) {
 
     createOrdersOperation() {
       return createOperation(CREATE_ORDERS_OPERATION);
+    },
+
+    cancelOperation(id: string) {
+      return client.request(CANCEL_OPERATION, { id });
     },
 
     finishLastOperation,
