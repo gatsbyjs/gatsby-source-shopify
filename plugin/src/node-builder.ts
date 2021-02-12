@@ -62,7 +62,7 @@ interface ProcessorMap {
 }
 
 const processorMap: ProcessorMap = {
-  ShopifyLineItem: async (node) => {
+  LineItem: async (node) => {
     const lineItem = node;
     lineItem.productId = (lineItem.product as { id: string }).id;
     delete lineItem.product;

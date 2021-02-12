@@ -275,6 +275,10 @@ exports.createSchemaCustomization = ({
       variants: [ShopifyProductVariant]
     }
 
+    type ShopifyProductFeaturedImage {
+      localFile: File @link
+    }
+
     type ShopifyMetafield implements Node {
       productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
     }
