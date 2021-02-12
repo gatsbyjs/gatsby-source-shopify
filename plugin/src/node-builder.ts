@@ -57,7 +57,7 @@ async function buildFromId(
   obj: Record<string, any>,
   getFactory: (remoteType: string) => (node: IdentifiableRecord) => NodeInput,
   gatsbyApi: SourceNodesArgs,
-  { useRemoteImages }: ShopifyPluginOptions
+  { downloadImages }: ShopifyPluginOptions
 ) {
   const [shopifyId, remoteType] = obj.id.match(pattern) || [];
 
@@ -78,11 +78,11 @@ async function buildFromId(
   const Node = getFactory(remoteType);
   const node = Node({ ...obj, id: shopifyId });
 
-  if (!useRemoteImages && remoteType === `ProductImage`) {
-    const src = node.originalSrc as string;
+  if (downloadImages && remoteType === `ProductImage`) {
+    const url = node.originalSrc as string;
     const fileNodeId = await downloadImageAndCreateFileNode(
       {
-        url: src && src.split(`?`)[0],
+        url,
         nodeId: node.id,
       },
       gatsbyApi

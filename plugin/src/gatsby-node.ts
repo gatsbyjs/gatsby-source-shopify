@@ -25,7 +25,7 @@ module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
     apiKey: Joi.string().required(),
     password: Joi.string().required(),
     storeUrl: Joi.string().required(),
-    useRemoteImages: Joi.boolean(),
+    downloadImages: Joi.boolean(),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders")),
@@ -376,7 +376,7 @@ async function resolveGatsbyImageData(
  */
 exports.createResolvers = (
   { createResolvers }: CreateResolversArgs,
-  { useRemoteImages }: ShopifyPluginOptions
+  { downloadImages }: ShopifyPluginOptions
 ) => {
   const resolvers: Record<string, unknown> = {
     ShopifyOrder: {
@@ -457,7 +457,7 @@ exports.createResolvers = (
     },
   };
 
-  if (useRemoteImages) {
+  if (!downloadImages) {
     resolvers.ShopifyProductImage = {
       gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
     };
