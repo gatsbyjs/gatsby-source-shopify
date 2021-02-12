@@ -461,6 +461,10 @@ exports.createResolvers = (
     resolvers.ShopifyProductImage = {
       gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
     };
+
+    resolvers.ShopifyProductFeaturedImage = {
+      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+    };
   }
 
   createResolvers(resolvers);
