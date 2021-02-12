@@ -7,6 +7,7 @@ import { eventsApi } from "./events";
 import {
   CreateResolversArgs,
   CreateSchemaCustomizationArgs,
+  NodePluginArgs,
   PluginOptionsSchemaArgs,
   SourceNodesArgs,
 } from "gatsby";
@@ -15,7 +16,12 @@ import { resolveGatsbyImageData } from "./resolve-gatsby-image-data";
 
 const LAST_SHOPIFY_BULK_OPERATION = `LAST_SHOPIFY_BULK_OPERATION`;
 
-module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
+const errorCodes = {
+  bulkOperationFailed: "111000",
+  unknownSourcingFailure: "111001",
+};
+
+export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
   return Joi.object({
     apiKey: Joi.string().required(),
     password: Joi.string().required(),
@@ -25,7 +31,7 @@ module.exports.pluginOptionsSchema = ({ Joi }: PluginOptionsSchemaArgs) => {
       .default([])
       .items(Joi.string().valid("orders")),
   });
-};
+}
 
 function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
@@ -67,10 +73,9 @@ function makeSourceFromOperation(
       } = await op();
 
       if (userErrors.length) {
-        operationTimer.panic;
         reporter.panic(
           {
-            id: ``, // TODO: decide on some error IDs
+            id: errorCodes.bulkOperationFailed,
             context: {
               sourceMessage: `Couldn't perform bulk operation`,
             },
@@ -120,7 +125,7 @@ function makeSourceFromOperation(
     } catch (e) {
       reporter.panic(
         {
-          id: ``,
+          id: errorCodes.unknownSourcingFailure,
           context: {
             sourceMessage: `Could not source from bulk operation`,
           },
@@ -237,7 +242,7 @@ export async function sourceNodes(
   );
 
   if (lastOperationId) {
-    gatsbyApi.reporter.info(`Cancelling last operation`);
+    gatsbyApi.reporter.info(`Cancelling last operation: ${lastOperationId}`);
     await createOperations(pluginOptions, gatsbyApi).cancelOperation(
       lastOperationId
     );
@@ -254,9 +259,9 @@ export async function sourceNodes(
   await gatsbyApi.cache.set(`LAST_BUILD_TIME`, Date.now());
 }
 
-exports.createSchemaCustomization = ({
+export function createSchemaCustomization({
   actions,
-}: CreateSchemaCustomizationArgs) => {
+}: CreateSchemaCustomizationArgs) {
   actions.createTypes(`
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
@@ -295,17 +300,17 @@ exports.createSchemaCustomization = ({
       localFile: File @link
     }
   `);
-};
+}
 
 /**
  * FIXME
  *
  * What are the types for the resolve functions?
  */
-exports.createResolvers = (
+export function createResolvers(
   { createResolvers }: CreateResolversArgs,
   { downloadImages }: ShopifyPluginOptions
-) => {
+) {
   const resolvers: Record<string, unknown> = {
     ShopifyOrder: {
       lineItems: {
@@ -396,4 +401,30 @@ exports.createResolvers = (
   }
 
   createResolvers(resolvers);
-};
+}
+
+interface ErrorContext {
+  sourceMessage: string;
+}
+
+const getErrorText = (context: ErrorContext): string => context.sourceMessage;
+
+export function onPreInit({ reporter }: NodePluginArgs) {
+  reporter.setErrorMap({
+    [errorCodes.bulkOperationFailed]: {
+      text: getErrorText,
+      level: `ERROR`,
+      category: `USER`,
+    },
+    /**
+     * If we don't know what it is, we haven't done our due
+     * diligence to handle it explicitly. That means it's our
+     * fault, so THIRD_PARTY indicates us, the plugin authors.
+     */
+    [errorCodes.unknownSourcingFailure]: {
+      text: getErrorText,
+      level: "ERROR",
+      category: `THIRD_PARTY`,
+    },
+  });
+}
