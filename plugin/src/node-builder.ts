@@ -24,7 +24,7 @@ const downloadImageAndCreateFileNode = async (
     store,
     reporter,
   }: SourceNodesArgs
-) => {
+): Promise<string | undefined> => {
   const mediaDataCacheKey = `Shopify__Media__${url}`;
   const cacheMediaData = await cache.get(mediaDataCacheKey);
 
@@ -79,6 +79,29 @@ const processorMap: ProcessorMap = {
       );
 
       node.localFile = fileNodeId;
+    }
+  },
+  Product: async (node, gatsbyApi, options) => {
+    if (options.downloadImages) {
+      const featuredImage = node.featuredImage as
+        | {
+            originalSrc: string;
+            localFile: string | undefined;
+          }
+        | undefined;
+
+      if (featuredImage) {
+        const url = featuredImage.originalSrc;
+        const fileNodeId = await downloadImageAndCreateFileNode(
+          {
+            url,
+            nodeId: node.id,
+          },
+          gatsbyApi
+        );
+
+        featuredImage.localFile = fileNodeId;
+      }
     }
   },
 };
