@@ -53,43 +53,50 @@ const downloadImageAndCreateFileNode = async (
   return undefined;
 };
 
+interface ProcessorMap {
+  [remoteType: string]: (
+    node: NodeInput,
+    gatsbyApi: SourceNodesArgs,
+    options: ShopifyPluginOptions
+  ) => Promise<void>;
+}
+
+const processorMap: ProcessorMap = {
+  ShopifyLineItem: async (node) => {
+    const lineItem = node;
+    lineItem.productId = (lineItem.product as { id: string }).id;
+    delete lineItem.product;
+  },
+  ProductImage: async (node, gatsbyApi, options) => {
+    if (options.downloadImages) {
+      const url = node.originalSrc as string;
+      const fileNodeId = await downloadImageAndCreateFileNode(
+        {
+          url,
+          nodeId: node.id,
+        },
+        gatsbyApi
+      );
+
+      node.localFile = fileNodeId;
+    }
+  },
+};
+
 async function buildFromId(
   obj: Record<string, any>,
   getFactory: (remoteType: string) => (node: IdentifiableRecord) => NodeInput,
   gatsbyApi: SourceNodesArgs,
-  { downloadImages }: ShopifyPluginOptions
+  options: ShopifyPluginOptions
 ) {
   const [shopifyId, remoteType] = obj.id.match(pattern) || [];
 
-  attachParentId(obj);
-
-  /* FIXME
-   * This is becoming littered with type checks.
-   * To clean this up, maybe we can introduce a
-   * mapping of custom processor functions.
-   * ~sslotsky
-   */
-  if (remoteType === `ShopifyLineItem`) {
-    const lineItem = obj;
-    lineItem.productId = lineItem.product.id || "";
-    delete lineItem.product;
-  }
-
   const Node = getFactory(remoteType);
+  const processor = processorMap[remoteType] || (() => Promise.resolve());
+
+  attachParentId(obj);
   const node = Node({ ...obj, id: shopifyId });
-
-  if (downloadImages && remoteType === `ProductImage`) {
-    const url = node.originalSrc as string;
-    const fileNodeId = await downloadImageAndCreateFileNode(
-      {
-        url,
-        nodeId: node.id,
-      },
-      gatsbyApi
-    );
-
-    node.localFile = fileNodeId;
-  }
+  await processor(node, gatsbyApi, options);
 
   return node;
 }
