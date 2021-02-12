@@ -1,3 +1,4 @@
+import { SourceNodesArgs } from "gatsby";
 import { createClient } from "./client";
 
 import {
@@ -19,12 +20,22 @@ export interface BulkOperationRunQueryResponse {
   };
 }
 
+interface CurrentBulkOperationResponse {
+  currentBulkOperation: {
+    id: string;
+    status: string;
+  };
+}
+
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`];
 
-export function createOperations(options: ShopifyPluginOptions) {
+export function createOperations(
+  options: ShopifyPluginOptions,
+  { reporter }: SourceNodesArgs
+) {
   const client = createClient(options);
 
-  function currentOperation() {
+  function currentOperation(): Promise<CurrentBulkOperationResponse> {
     return client.request(OPERATION_STATUS_QUERY);
   }
 
@@ -36,8 +47,15 @@ export function createOperations(options: ShopifyPluginOptions) {
 
   async function finishLastOperation(): Promise<void> {
     const { currentBulkOperation } = await currentOperation();
-    console.info(currentBulkOperation);
     if (currentBulkOperation && currentBulkOperation.id) {
+      reporter.verbose(`
+        Waiting for previous operation
+
+        ${currentBulkOperation.id}
+
+        Status: ${currentBulkOperation.status}
+      `);
+
       if (finishedStatuses.includes(currentBulkOperation.status)) {
         return;
       }
@@ -61,7 +79,18 @@ export function createOperations(options: ShopifyPluginOptions) {
       id: operationId,
     });
 
-    console.info(operation);
+    reporter.verbose(`
+      Waiting for operation to complete
+
+      ${operationId}
+
+      Status: ${operation.node.status}
+
+      Object count: ${operation.node.objectCount}
+
+      Url: ${operation.node.url}
+    `);
+
     if (operation.node.status === "FAILED") {
       throw operation;
     }

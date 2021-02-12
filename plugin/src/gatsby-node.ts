@@ -47,27 +47,27 @@ function makeSourceFromOperation(
     } = gatsbyApi;
 
     try {
-      const operationComplete = `Sourced from bulk operation`;
-      console.time(operationComplete);
+      const operationTimer = reporter.activityTimer(
+        `Sourced from bulk operation`
+      );
+      operationTimer.start();
+
       const nodeHelpers = createNodeHelpers({
         typePrefix: `Shopify`,
         createNodeId,
         createContentDigest,
       });
 
-      const finishLastOp = `Checked for operations in progress`;
-      console.time(finishLastOp);
+      reporter.info(`Checking for operations in progress`);
       await finishLastOperation();
-      console.timeEnd(finishLastOp);
 
-      const initiating = `Initiated bulk operation query`;
-      console.time(initiating);
+      reporter.info(`Initiating bulk operation query`);
       const {
         bulkOperationRunQuery: { userErrors, bulkOperation },
       } = await op();
-      console.timeEnd(initiating);
 
       if (userErrors.length) {
+        operationTimer.panic;
         reporter.panic(
           {
             id: ``, // TODO: decide on some error IDs
@@ -79,17 +79,14 @@ function makeSourceFromOperation(
         );
       }
 
-      const waitForCurrentOp = `Completed bulk operation`;
-      console.time(waitForCurrentOp);
-
       await cache.set(LAST_SHOPIFY_BULK_OPERATION, bulkOperation.id);
 
       let resp = await completedOperation(bulkOperation.id);
-      console.timeEnd(waitForCurrentOp);
+      reporter.info(`Completed bulk operation`);
 
       if (parseInt(resp.node.objectCount, 10) === 0) {
         reporter.info(`No data was returned for this operation`);
-        console.timeEnd(operationComplete);
+        operationTimer.end();
         return;
       }
 
@@ -102,8 +99,7 @@ function makeSourceFromOperation(
 
       const builder = nodeBuilder(nodeHelpers, gatsbyApi, options);
 
-      const creatingNodes = `Created nodes from bulk operation`;
-      console.time(creatingNodes);
+      reporter.info(`Creating nodes from bulk operation`);
 
       const promises = [];
       for await (const line of rl) {
@@ -118,9 +114,7 @@ function makeSourceFromOperation(
         })
       );
 
-      console.timeEnd(creatingNodes);
-
-      console.timeEnd(operationComplete);
+      operationTimer.end();
 
       await cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
     } catch (e) {
@@ -146,7 +140,7 @@ async function sourceAllNodes(
     createOrdersOperation,
     finishLastOperation,
     completedOperation,
-  } = createOperations(pluginOptions);
+  } = createOperations(pluginOptions, gatsbyApi);
 
   const operations = [createProductsOperation];
   if (pluginOptions.shopifyConnections?.includes("orders")) {
@@ -181,7 +175,7 @@ async function sourceChangedNodes(
     incrementalOrders,
     finishLastOperation,
     completedOperation,
-  } = createOperations(pluginOptions);
+  } = createOperations(pluginOptions, gatsbyApi);
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   const touchNode = (node: { id: string }) =>
     gatsbyApi.actions.touchNode({ nodeId: node.id });
@@ -243,11 +237,10 @@ export async function sourceNodes(
   );
 
   if (lastOperationId) {
-    console.info(`Cancelling last operation`);
-    const cancelled = await createOperations(pluginOptions).cancelOperation(
+    gatsbyApi.reporter.info(`Cancelling last operation`);
+    await createOperations(pluginOptions, gatsbyApi).cancelOperation(
       lastOperationId
     );
-    console.info(cancelled);
     await gatsbyApi.cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
   }
 
