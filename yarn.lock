@@ -5229,17 +5229,6 @@ gatsby-source-filesystem@^2.10.0:
     valid-url "^1.0.9"
     xstate "^4.14.0"
 
-gatsby-source-shopify-experimental@^1.0.0:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/gatsby-source-shopify-experimental/-/gatsby-source-shopify-experimental-1.8.0.tgz#5e1e9d2b012e724b9ddbd63ce1f3e3c6a7b073b7"
-  integrity sha512-uSPcAaOECpZxId4XmL0Gx3VT5NxfVacrhOs1kwic1pfyireafZqVwgUQTrxeCrpuCWryXJg0GQPN8OZk32liiQ==
-  dependencies:
-    gatsby "^2.30.0"
-    gatsby-node-helpers "^1.0.3"
-    gatsby-source-filesystem "^2.10.0"
-    graphql-request "^3.4.0"
-    node-fetch "^2.6.1"
-
 gatsby-telemetry@^1.9.0:
   version "1.9.0"
   resolved "https://registry.yarnpkg.com/gatsby-telemetry/-/gatsby-telemetry-1.9.0.tgz#91083de2f85c3dc69a38653fddd5e33af0daab75"
