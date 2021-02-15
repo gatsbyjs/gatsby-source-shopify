@@ -71,7 +71,7 @@ const ordersQuery = (dateString?: string) => `
 {
   orders${
     dateString
-      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      ? `(query: "created_at:>='${dateString}' OR updated_at:>='${dateString}'")`
       : ``
   } {
     edges {
@@ -104,7 +104,7 @@ const productsQuery = (dateString?: string) => `
 {
   products${
     dateString
-      ? `(query: "created_at:>=${dateString} OR updated_at:>=${dateString}")`
+      ? `(query: "created_at:>='${dateString}' OR updated_at:>='${dateString}'")`
       : ``
   } {
     edges {
