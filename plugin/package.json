@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc#readme",
   "dependencies": {
-    "gatsby": "^2.30.0",
     "gatsby-node-helpers": "^1.0.3",
     "gatsby-source-filesystem": "^2.10.0",
     "graphql-request": "^3.4.0",
