@@ -218,12 +218,15 @@ const productsQuery = (dateString?: string) => `
               storefrontId
               availableForSale
               compareAtPrice
-              title
+              inventoryPolicy
+              inventoryQuantity
+              price
               selectedOptions {
                 name
                 value
               }
-              price
+              sku
+              title
               metafields {
                 edges {
                   node {
