@@ -67,6 +67,75 @@ function bulkOperationQuery(query: string) {
   `;
 }
 
+const collectionsQuery = (dateString?: string) => `
+{
+  collections${
+    dateString
+      ? `(query: "created_at:>='${dateString}' OR updated_at:>='${dateString}'")`
+      : ``
+  } {
+    edges {
+      node {
+        products {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+        description
+        descriptionHtml
+        feedback {
+          details {
+            app {
+              id
+            }
+            link {
+              label
+              url
+            }
+            messages {
+              field
+              message
+            }
+          }
+          summary
+        }
+        handle
+        id
+        image {
+          id
+          altText
+          height
+          width
+          originalSrc
+          transformedSrc
+        }
+        legacyResourceId
+        productsCount
+        ruleSet {
+          appliedDisjunctively
+          rules {
+            column
+            condition
+            relation
+          }
+        }
+        seo {
+          description
+          title
+        }
+        sortOrder
+        storefrontId
+        templateSuffix
+        title
+        updatedAt
+      }
+    }
+  }
+}
+`;
+
 const ordersQuery = (dateString?: string) => `
 {
   orders${
@@ -247,8 +316,13 @@ const productsQuery = (dateString?: string) => `
 
 export const CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
 export const CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
+export const CREATE_COLLECTIONS_OPERATION = bulkOperationQuery(
+  collectionsQuery()
+);
 
 export const incrementalProductsQuery = (date: Date) =>
   bulkOperationQuery(productsQuery(date.toISOString()));
 export const incrementalOrdersQuery = (date: Date) =>
   bulkOperationQuery(ordersQuery(date.toISOString()));
+export const incrementalCollectionsQuery = (date: Date) =>
+  bulkOperationQuery(collectionsQuery(date.toISOString()));

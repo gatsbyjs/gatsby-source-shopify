@@ -1,14 +1,17 @@
-import { SourceNodesArgs } from "gatsby";
+import { NodeInput, SourceNodesArgs } from "gatsby";
 import { createClient } from "./client";
+import { NodeBuilder } from "./node-builder";
 
 import {
   OPERATION_STATUS_QUERY,
   OPERATION_BY_ID,
   CREATE_PRODUCTS_OPERATION,
   CREATE_ORDERS_OPERATION,
+  CREATE_COLLECTIONS_OPERATION,
   CANCEL_OPERATION,
   incrementalProductsQuery,
   incrementalOrdersQuery,
+  incrementalCollectionsQuery,
 } from "./queries";
 
 export interface BulkOperationRunQueryResponse {
@@ -20,6 +23,17 @@ export interface BulkOperationRunQueryResponse {
   };
 }
 
+export type BulkResults = Record<string, any>[];
+
+export interface ShopifyBulkOperation {
+  execute: () => Promise<BulkOperationRunQueryResponse>;
+  name: string;
+  process: (
+    objects: BulkResults,
+    nodeBuilder: NodeBuilder
+  ) => Promise<NodeInput>[];
+}
+
 interface CurrentBulkOperationResponse {
   currentBulkOperation: {
     id: string;
@@ -28,6 +42,10 @@ interface CurrentBulkOperationResponse {
 }
 
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`];
+
+function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {
+  return objects.map(builder.buildNode);
+}
 
 export function createOperations(
   options: ShopifyPluginOptions,
@@ -40,9 +58,18 @@ export function createOperations(
   }
 
   function createOperation(
-    operationQuery: string
-  ): Promise<BulkOperationRunQueryResponse> {
-    return client.request(operationQuery);
+    operationQuery: string,
+    name: string,
+    process?: (
+      objects: BulkResults,
+      nodeBuilder: NodeBuilder
+    ) => Promise<NodeInput>[]
+  ): ShopifyBulkOperation {
+    return {
+      execute: () => client.request(operationQuery),
+      name,
+      process: process || defaultProcessor,
+    };
   }
 
   async function finishLastOperation(): Promise<void> {
@@ -106,20 +133,37 @@ export function createOperations(
 
   return {
     incrementalProducts(date: Date) {
-      return createOperation(incrementalProductsQuery(date));
+      return createOperation(
+        incrementalProductsQuery(date),
+        "INCREMENTAL_PRODUCTS"
+      );
     },
 
     incrementalOrders(date: Date) {
-      return createOperation(incrementalOrdersQuery(date));
+      return createOperation(
+        incrementalOrdersQuery(date),
+        "INCREMENTAL_ORDERS"
+      );
     },
 
-    createProductsOperation() {
-      return createOperation(CREATE_PRODUCTS_OPERATION);
+    incrementalCollections(date: Date) {
+      return createOperation(
+        incrementalCollectionsQuery(date),
+        "INCREMENTAL_COLLECTIONS"
+      );
     },
 
-    createOrdersOperation() {
-      return createOperation(CREATE_ORDERS_OPERATION);
-    },
+    createProductsOperation: createOperation(
+      CREATE_PRODUCTS_OPERATION,
+      "PRODUCTS"
+    ),
+
+    createOrdersOperation: createOperation(CREATE_ORDERS_OPERATION, "ORDERS"),
+
+    createCollectionsOperation: createOperation(
+      CREATE_COLLECTIONS_OPERATION,
+      "COLLECTIONS"
+    ),
 
     cancelOperation(id: string) {
       return client.request(CANCEL_OPERATION, { id });

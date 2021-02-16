@@ -124,11 +124,15 @@ async function buildFromId(
   return node;
 }
 
+export interface NodeBuilder {
+  buildNode: (obj: Record<string, any>) => Promise<NodeInput>;
+}
+
 export function nodeBuilder(
   nodeHelpers: NodeHelpers,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
-) {
+): NodeBuilder {
   const factoryMap: {
     [k: string]: (node: IdentifiableRecord) => NodeInput;
   } = {};
