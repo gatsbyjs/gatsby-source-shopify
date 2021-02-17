@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { createNodeHelpers } from "gatsby-node-helpers";
 import { createInterface } from "readline";
-import { createOperations, BulkOperationRunQueryResponse } from "./operations";
+import { createOperations, ShopifyBulkOperation } from "./operations";
 import { nodeBuilder } from "./node-builder";
 import { eventsApi } from "./events";
 import {
@@ -29,7 +29,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     downloadImages: Joi.boolean(),
     shopifyConnections: Joi.array()
       .default([])
-      .items(Joi.string().valid("orders")),
+      .items(Joi.string().valid("orders", "collections")),
   });
 }
 
@@ -41,9 +41,7 @@ function makeSourceFromOperation(
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ) {
-  return async function sourceFromOperation(
-    op: () => Promise<BulkOperationRunQueryResponse>
-  ) {
+  return async function sourceFromOperation(op: ShopifyBulkOperation) {
     const {
       reporter,
       actions,
@@ -54,7 +52,7 @@ function makeSourceFromOperation(
 
     try {
       const operationTimer = reporter.activityTimer(
-        `Sourced from bulk operation`
+        `Source from bulk operation ${op.name}`
       );
       operationTimer.start();
 
@@ -70,7 +68,7 @@ function makeSourceFromOperation(
       reporter.info(`Initiating bulk operation query`);
       const {
         bulkOperationRunQuery: { userErrors, bulkOperation },
-      } = await op();
+      } = await op.execute();
 
       if (userErrors.length) {
         reporter.panic(
@@ -102,21 +100,21 @@ function makeSourceFromOperation(
         crlfDelay: Infinity,
       });
 
-      const builder = nodeBuilder(nodeHelpers, gatsbyApi, options);
+      reporter.info(`Creating nodes from bulk operation ${op.name}`);
 
-      reporter.info(`Creating nodes from bulk operation`);
+      const objects: BulkResults = [];
 
-      const promises = [];
       for await (const line of rl) {
-        const obj = JSON.parse(line);
-        promises.push(builder.buildNode(obj));
+        objects.push(JSON.parse(line));
       }
 
       await Promise.all(
-        promises.map(async (promise) => {
-          const node = await promise;
-          actions.createNode(node);
-        })
+        op
+          .process(objects, nodeBuilder(nodeHelpers, gatsbyApi, options))
+          .map(async (promise) => {
+            const node = await promise;
+            actions.createNode(node);
+          })
       );
 
       operationTimer.end();
@@ -143,6 +141,7 @@ async function sourceAllNodes(
   const {
     createProductsOperation,
     createOrdersOperation,
+    createCollectionsOperation,
     finishLastOperation,
     completedOperation,
   } = createOperations(pluginOptions, gatsbyApi);
@@ -152,13 +151,20 @@ async function sourceAllNodes(
     operations.push(createOrdersOperation);
   }
 
+  if (pluginOptions.shopifyConnections?.includes("collections")) {
+    operations.push(createCollectionsOperation);
+  }
+
   const sourceFromOperation = makeSourceFromOperation(
     finishLastOperation,
     completedOperation,
     gatsbyApi,
     pluginOptions
   );
-  await Promise.all(operations.map(sourceFromOperation));
+
+  for (const op of operations) {
+    await sourceFromOperation(op);
+  }
 }
 
 const shopifyNodeTypes = [
@@ -166,7 +172,9 @@ const shopifyNodeTypes = [
   `ShopifyMetafield`,
   `ShopifyOrder`,
   `ShopifyProduct`,
+  `ShopifyCollection`,
   `ShopifyProductImage`,
+  `ShopifyProductFeaturedImage`,
   `ShopifyProductVariant`,
   `ShopifyProductVariantPricePair`,
 ];
@@ -178,6 +186,7 @@ async function sourceChangedNodes(
   const {
     incrementalProducts,
     incrementalOrders,
+    incrementalCollections,
     finishLastOperation,
     completedOperation,
   } = createOperations(pluginOptions, gatsbyApi);
@@ -188,9 +197,13 @@ async function sourceChangedNodes(
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
-  const operations = [incrementalProducts];
+  const operations = [incrementalProducts(lastBuildTime)];
   if (pluginOptions.shopifyConnections?.includes("orders")) {
-    operations.push(incrementalOrders);
+    operations.push(incrementalOrders(lastBuildTime));
+  }
+
+  if (pluginOptions.shopifyConnections?.includes("collections")) {
+    operations.push(incrementalCollections(lastBuildTime));
   }
 
   const sourceFromOperation = makeSourceFromOperation(
@@ -200,14 +213,9 @@ async function sourceChangedNodes(
     pluginOptions
   );
 
-  const deltaSource = (
-    op: (date: Date) => Promise<BulkOperationRunQueryResponse>
-  ) => {
-    const deltaOp = () => op(new Date(lastBuildTime));
-    return sourceFromOperation(deltaOp);
-  };
-
-  await Promise.all(operations.map(deltaSource));
+  for (const op of operations) {
+    await sourceFromOperation(op);
+  }
 
   const { fetchDestroyEventsSince } = eventsApi(pluginOptions);
   const destroyEvents = await fetchDestroyEventsSince(new Date(lastBuildTime));
@@ -312,6 +320,22 @@ export function createResolvers(
   { downloadImages }: ShopifyPluginOptions
 ) {
   const resolvers: Record<string, unknown> = {
+    ShopifyCollection: {
+      products: {
+        type: ["ShopifyProduct"],
+        resolve(source: any, _args: any, context: any, _info: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                shopifyId: { in: source.productIds || [] },
+              },
+            },
+            type: "ShopifyProduct",
+            firstOnly: false,
+          });
+        },
+      },
+    },
     ShopifyOrder: {
       lineItems: {
         type: ["ShopifyLineItem"],

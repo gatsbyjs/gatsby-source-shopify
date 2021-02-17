@@ -3,7 +3,7 @@ import { IdentifiableRecord, NodeHelpers } from "gatsby-node-helpers";
 import { createRemoteFileNode } from "gatsby-source-filesystem";
 
 // 'gid://shopify/Metafield/6936247730264'
-const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
+export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
 function attachParentId(obj: Record<string, any>) {
   if (obj.__parentId) {
@@ -128,7 +128,7 @@ export function nodeBuilder(
   nodeHelpers: NodeHelpers,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
-) {
+): NodeBuilder {
   const factoryMap: {
     [k: string]: (node: IdentifiableRecord) => NodeInput;
   } = {};
