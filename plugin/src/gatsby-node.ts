@@ -182,10 +182,10 @@ async function sourceChangedNodes(
     completedOperation,
   } = createOperations(pluginOptions, gatsbyApi);
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
-  const touchNode = (node: { id: string }) =>
-    gatsbyApi.actions.touchNode({ nodeId: node.id });
   for (const nodeType of shopifyNodeTypes) {
-    gatsbyApi.getNodesByType(nodeType).forEach(touchNode);
+    gatsbyApi
+      .getNodesByType(nodeType)
+      .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
   const operations = [incrementalProducts];
