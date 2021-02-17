@@ -18,22 +18,13 @@ function attachParentId(obj: Record<string, any>) {
 const downloadImageAndCreateFileNode = async (
   { url, nodeId }: { url: string; nodeId: string },
   {
-    actions: { createNode, touchNode },
+    actions: { createNode },
     createNodeId,
     cache,
     store,
     reporter,
   }: SourceNodesArgs
-): Promise<string | undefined> => {
-  const mediaDataCacheKey = `Shopify__Media__${url}`;
-  const cacheMediaData = await cache.get(mediaDataCacheKey);
-
-  if (cacheMediaData) {
-    const fileNodeID = cacheMediaData.fileNodeID;
-    touchNode({ nodeId: fileNodeID });
-    return fileNodeID;
-  }
-
+): Promise<string> => {
   const fileNode = await createRemoteFileNode({
     url,
     cache,
@@ -44,13 +35,7 @@ const downloadImageAndCreateFileNode = async (
     reporter,
   });
 
-  if (fileNode) {
-    const fileNodeID = fileNode.id;
-    await cache.set(mediaDataCacheKey, { fileNodeID });
-    return fileNodeID;
-  }
-
-  return undefined;
+  return fileNode.id;
 };
 
 interface ProcessorMap {

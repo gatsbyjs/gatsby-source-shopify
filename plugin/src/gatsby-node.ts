@@ -234,7 +234,7 @@ async function sourceChangedNodes(
             node.internal.type === `Shopify${e.subject_type}`
         );
         if (event) {
-          gatsbyApi.actions.deleteNode({ node });
+          gatsbyApi.actions.deleteNode(node);
         }
       });
     }
