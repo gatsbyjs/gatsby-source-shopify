@@ -1,11 +1,7 @@
 import fetch from "node-fetch";
 import { createNodeHelpers } from "gatsby-node-helpers";
 import { createInterface } from "readline";
-import {
-  createOperations,
-  ShopifyBulkOperation,
-  BulkResults,
-} from "./operations";
+import { createOperations, ShopifyBulkOperation } from "./operations";
 import { nodeBuilder } from "./node-builder";
 import { eventsApi } from "./events";
 import {
@@ -109,7 +105,7 @@ function makeSourceFromOperation(
       const objects: BulkResults = [];
 
       for await (const line of rl) {
-        objects.unshift(JSON.parse(line));
+        objects.push(JSON.parse(line));
       }
 
       await Promise.all(
@@ -324,6 +320,22 @@ export function createResolvers(
   { downloadImages }: ShopifyPluginOptions
 ) {
   const resolvers: Record<string, unknown> = {
+    ShopifyCollection: {
+      products: {
+        type: ["ShopifyProduct"],
+        resolve(source: any, _args: any, context: any, _info: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                shopifyId: { in: source.productIds || [] },
+              },
+            },
+            type: "ShopifyProduct",
+            firstOnly: false,
+          });
+        },
+      },
+    },
     ShopifyOrder: {
       lineItems: {
         type: ["ShopifyLineItem"],

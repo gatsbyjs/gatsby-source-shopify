@@ -1,6 +1,6 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
 import { createClient } from "./client";
-import { NodeBuilder } from "./node-builder";
+import { collectionsProcessor } from "./processors";
 
 import {
   OPERATION_STATUS_QUERY,
@@ -22,8 +22,6 @@ export interface BulkOperationRunQueryResponse {
     };
   };
 }
-
-export type BulkResults = Record<string, any>[];
 
 export interface ShopifyBulkOperation {
   execute: () => Promise<BulkOperationRunQueryResponse>;
@@ -149,7 +147,8 @@ export function createOperations(
     incrementalCollections(date: Date) {
       return createOperation(
         incrementalCollectionsQuery(date),
-        "INCREMENTAL_COLLECTIONS"
+        "INCREMENTAL_COLLECTIONS",
+        collectionsProcessor
       );
     },
 
@@ -162,7 +161,8 @@ export function createOperations(
 
     createCollectionsOperation: createOperation(
       CREATE_COLLECTIONS_OPERATION,
-      "COLLECTIONS"
+      "COLLECTIONS",
+      collectionsProcessor
     ),
 
     cancelOperation(id: string) {
