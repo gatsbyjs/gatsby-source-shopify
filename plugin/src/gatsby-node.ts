@@ -52,7 +52,7 @@ function makeSourceFromOperation(
 
     try {
       const operationTimer = reporter.activityTimer(
-        `Sourced from bulk operation`
+        `Source from bulk operation ${op.name}`
       );
       operationTimer.start();
 
