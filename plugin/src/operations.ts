@@ -73,13 +73,15 @@ export function createOperations(
   async function finishLastOperation(): Promise<void> {
     const { currentBulkOperation } = await currentOperation();
     if (currentBulkOperation && currentBulkOperation.id) {
-      reporter.verbose(`
+      if (options.verboseLogging) {
+        reporter.verbose(`
         Waiting for previous operation
 
         ${currentBulkOperation.id}
 
         Status: ${currentBulkOperation.status}
       `);
+      }
 
       if (finishedStatuses.includes(currentBulkOperation.status)) {
         return;
@@ -104,7 +106,8 @@ export function createOperations(
       id: operationId,
     });
 
-    reporter.verbose(`
+    if (options.verboseLogging) {
+      reporter.verbose(`
       Waiting for operation to complete
 
       ${operationId}
@@ -115,6 +118,7 @@ export function createOperations(
 
       Url: ${operation.node.url}
     `);
+    }
 
     if (operation.node.status === "FAILED") {
       throw operation;

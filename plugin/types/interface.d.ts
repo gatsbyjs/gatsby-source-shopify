@@ -3,6 +3,7 @@ interface ShopifyPluginOptions {
   password: string;
   storeUrl: string;
   downloadImages?: boolean;
+  verboseLogging?: boolean;
   shopifyConnections?: string[];
 }
 
