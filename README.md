@@ -37,7 +37,23 @@ module.exports = {
 };
 ```
 
-_TODO_: add instructions for finding these values
+### Retrieving API Information from Shopify
+
+In Shopify admin, `SHOPIFY_STORE_URL` is the Store address you enter when logging into your Shopify account. This typically is in the format of `myshop.myshopify.com`.
+
+Once logged into Shopify admin, navigate to the `Apps` page and click the link at the bottom to `Manage private apps`. This will allow you to turn on private apps and create an app that Gatsby will use to access Shopify's Admin API.
+
+For the Private app name enter `Gatsby` (the name does not really matter). Add the following under the `Active Permissions for this App` section:
+
+- `Read access` for `Products`
+- `Read access` for `Product listings` if you want to use Shopify's Product Collections in your Gatsby site
+- `Read access` for `Orders` if you want to use order information in your Gatsby site
+
+**Note: Enabling Cart and Checkout features**
+
+If you are planning on managing your cart within Gatsby you will also need to check the box next to `Allow this app to access your storefront data using the Storefront API` and make sure to check `Read and modify checkouts`. This source plugin does not require Shopify Storefront API access to work, however, this is needed to add items to a Shopify checkout before passing the user to Shopify's managed checkout workflow. See [Gatsby Starter Shopify][https://github.com/gatsbyjs/gatsby-starter-shopify] for an example.
+
+Click the Save button and then click Create app to create your Private Shopify App. From there you can copy the API Key and Password from the Private app page and add them to your environment file for `SHOPIFY_ADMIN_API_KEY` and `SHOPIFY_ADMIN_PASSWORD` respectively.
 
 ### Fire it up
 
