@@ -27,6 +27,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     password: Joi.string().required(),
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
+    verboseLogging: Joi.boolean(),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
@@ -62,8 +63,12 @@ function makeSourceFromOperation(
         createContentDigest,
       });
 
-      reporter.info(`Checking for operations in progress`);
+      const waitTimer = reporter.activityTimer(
+        `Check for operations in progress`
+      );
+      waitTimer.start();
       await finishLastOperation();
+      waitTimer.end();
 
       reporter.info(`Initiating bulk operation query`);
       const {
