@@ -190,7 +190,7 @@ async function sourceChangedNodes(
     finishLastOperation,
     completedOperation,
   } = createOperations(pluginOptions, gatsbyApi);
-  const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
+  const lastBuildTime = new Date(await gatsbyApi.cache.get(`LAST_BUILD_TIME`));
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
       .getNodesByType(nodeType)
@@ -218,7 +218,7 @@ async function sourceChangedNodes(
   }
 
   const { fetchDestroyEventsSince } = eventsApi(pluginOptions);
-  const destroyEvents = await fetchDestroyEventsSince(new Date(lastBuildTime));
+  const destroyEvents = await fetchDestroyEventsSince(lastBuildTime);
   if (destroyEvents.length) {
     for (const nodeType of shopifyNodeTypes) {
       gatsbyApi.getNodesByType(nodeType).forEach((node) => {
