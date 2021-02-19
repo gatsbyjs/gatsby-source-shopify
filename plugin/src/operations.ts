@@ -64,7 +64,8 @@ export function createOperations(
     ) => Promise<NodeInput>[]
   ): ShopifyBulkOperation {
     return {
-      execute: () => client.request(operationQuery),
+      execute: () =>
+        client.request<BulkOperationRunQueryResponse>(operationQuery),
       name,
       process: process || defaultProcessor,
     };
@@ -102,7 +103,9 @@ export function createOperations(
     operationId: string,
     interval = 1000
   ): Promise<{ node: { objectCount: string; url: string } }> {
-    const operation = await client.request(OPERATION_BY_ID, {
+    const operation = await client.request<{
+      node: { status: string; objectCount: string; url: string };
+    }>(OPERATION_BY_ID, {
       id: operationId,
     });
 
