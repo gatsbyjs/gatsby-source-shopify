@@ -63,12 +63,7 @@ function makeSourceFromOperation(
         createContentDigest,
       });
 
-      const waitTimer = reporter.activityTimer(
-        `Check for operations in progress`
-      );
-      waitTimer.start();
       await finishLastOperation();
-      waitTimer.end();
 
       reporter.info(`Initiating bulk operation query`);
       const {
