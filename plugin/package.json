@@ -1,10 +1,11 @@
 {
   "name": "gatsby-source-shopify-experimental",
-  "version": "1.11.3",
+  "version": "1.11.5",
   "description": "",
   "scripts": {
     "watch": "tsc-watch",
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "yarn build && cp ../README.md ."
   },
   "repository": {
     "type": "git",
