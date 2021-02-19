@@ -72,24 +72,24 @@ export function createOperations(
   }
 
   async function finishLastOperation(): Promise<void> {
-    const { currentBulkOperation } = await currentOperation();
+    let { currentBulkOperation } = await currentOperation();
     if (currentBulkOperation && currentBulkOperation.id) {
-      if (options.verboseLogging) {
-        reporter.verbose(`
-        Waiting for previous operation
+      const timer = reporter.activityTimer(
+        `Waiting for operation ${currentBulkOperation.id} : ${currentBulkOperation.status}`
+      );
+      timer.start();
 
-        ${currentBulkOperation.id}
-
-        Status: ${currentBulkOperation.status}
-      `);
+      while (!finishedStatuses.includes(currentBulkOperation.status)) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        currentBulkOperation = (await currentOperation()).currentBulkOperation;
+        if (options.verboseLogging) {
+          reporter.verbose(
+            `Polling operation ${currentBulkOperation.id} : ${currentBulkOperation.status}`
+          );
+        }
       }
 
-      if (finishedStatuses.includes(currentBulkOperation.status)) {
-        return;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return finishLastOperation();
+      timer.end();
     }
   }
   /* Maybe the interval should be adjustable, because users
