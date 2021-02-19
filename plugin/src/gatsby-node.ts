@@ -269,8 +269,10 @@ export async function sourceNodes(
 
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   if (lastBuildTime) {
+    gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
     await sourceChangedNodes(gatsbyApi, pluginOptions);
   } else {
+    gatsbyApi.reporter.info(`Cache is cold, running a clean build`);
     await sourceAllNodes(gatsbyApi, pluginOptions);
   }
 
