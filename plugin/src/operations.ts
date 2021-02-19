@@ -82,6 +82,11 @@ export function createOperations(
       while (!finishedStatuses.includes(currentBulkOperation.status)) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         currentBulkOperation = (await currentOperation()).currentBulkOperation;
+        if (options.verboseLogging) {
+          reporter.verbose(
+            `Polling operation ${currentBulkOperation.id} : ${currentBulkOperation.status}`
+          );
+        }
       }
 
       timer.end();
