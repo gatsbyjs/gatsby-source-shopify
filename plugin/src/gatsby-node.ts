@@ -82,10 +82,13 @@ function makeSourceFromOperation(
         );
       }
 
+      operationTimer.setStatus(
+        `Polling bulk operation ${op.name}: ${bulkOperation.id}`
+      );
       await cache.set(LAST_SHOPIFY_BULK_OPERATION, bulkOperation.id);
 
       let resp = await completedOperation(bulkOperation.id);
-      reporter.info(`Completed bulk operation`);
+      reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
 
       if (parseInt(resp.node.objectCount, 10) === 0) {
         reporter.info(`No data was returned for this operation`);
@@ -93,8 +96,15 @@ function makeSourceFromOperation(
         return;
       }
 
+      operationTimer.setStatus(
+        `Fetching ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
+      );
+
       const results = await fetch(resp.node.url);
 
+      operationTimer.setStatus(
+        `Processing ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
+      );
       const rl = createInterface({
         input: results.body,
         crlfDelay: Infinity,
@@ -259,8 +269,10 @@ export async function sourceNodes(
 
   const lastBuildTime = await gatsbyApi.cache.get(`LAST_BUILD_TIME`);
   if (lastBuildTime) {
+    gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
     await sourceChangedNodes(gatsbyApi, pluginOptions);
   } else {
+    gatsbyApi.reporter.info(`Cache is cold, running a clean build`);
     await sourceAllNodes(gatsbyApi, pluginOptions);
   }
 
