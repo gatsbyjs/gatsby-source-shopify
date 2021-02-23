@@ -13,7 +13,7 @@ This takes you through the minimal steps to see your Shopify data in your Gatsby
 Install this plugin to your Gatsby site.
 
 ```
-npm i gatsby-source-wordpress-experimental
+npm i gatsby-source-shopify-experimental
 ```
 
 ### Configure
