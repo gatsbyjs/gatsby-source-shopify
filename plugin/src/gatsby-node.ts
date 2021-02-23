@@ -395,6 +395,20 @@ export function createResolvers(
       },
     },
     ShopifyProduct: {
+      collections: {
+        type: ["ShopifyCollection"],
+        resolve(source: any, _args: any, context: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productIds: { eq: source.shopifyId },
+              },
+            },
+            type: "ShopifyCollection",
+            firstOnly: false,
+          });
+        },
+      },
       images: {
         type: ["ShopifyProductImage"],
         resolve(source: any, _args: any, context: any, _info: any) {
