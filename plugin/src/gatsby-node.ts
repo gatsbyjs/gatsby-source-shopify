@@ -294,7 +294,6 @@ export function createSchemaCustomization({
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "shopifyId")
       metafields: [ShopifyMetafield]
-      presentmentPrices: [ShopifyProductVariantPricePair]
     }
 
     type ShopifyProduct implements Node {
@@ -337,56 +336,10 @@ export function createSchemaCustomization({
  */
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages }: ShopifyPluginOptions
+  { downloadImages, shopifyConnections = [] }: ShopifyPluginOptions
 ) {
-  const resolvers: Record<string, unknown> = {
-    ShopifyCollection: {
-      products: {
-        type: ["ShopifyProduct"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                shopifyId: { in: source.productIds || [] },
-              },
-            },
-            type: "ShopifyProduct",
-            firstOnly: false,
-          });
-        },
-      },
-    },
-    ShopifyOrder: {
-      lineItems: {
-        type: ["ShopifyLineItem"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                orderId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyLineItem",
-            firstOnly: false,
-          });
-        },
-      },
-    },
+  const resolvers: Record<string, any> = {
     ShopifyProductVariant: {
-      presentmentPrices: {
-        type: ["ShopifyProductVariantPricePair"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productVariantId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyProductVariantPricePair",
-            firstOnly: false,
-          });
-        },
-      },
       metafields: {
         type: ["ShopifyMetafield"],
         resolve(source: any, _args: any, context: any, _info: any) {
@@ -403,20 +356,6 @@ export function createResolvers(
       },
     },
     ShopifyProduct: {
-      collections: {
-        type: ["ShopifyCollection"],
-        resolve(source: any, _args: any, context: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productIds: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyCollection",
-            firstOnly: false,
-          });
-        },
-      },
       images: {
         type: ["ShopifyProductImage"],
         resolve(source: any, _args: any, context: any, _info: any) {
@@ -455,6 +394,59 @@ export function createResolvers(
 
     resolvers.ShopifyProductFeaturedImage = {
       gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+    };
+  }
+
+  if (shopifyConnections.includes("orders")) {
+    resolvers.ShopifyOrder = {
+      lineItems: {
+        type: ["ShopifyLineItem"],
+        resolve(source: any, _args: any, context: any, _info: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                orderId: { eq: source.shopifyId },
+              },
+            },
+            type: "ShopifyLineItem",
+            firstOnly: false,
+          });
+        },
+      },
+    };
+  }
+
+  if (shopifyConnections.includes("collections")) {
+    resolvers.ShopifyCollection = {
+      products: {
+        type: ["ShopifyProduct"],
+        resolve(source: any, _args: any, context: any, _info: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                shopifyId: { in: source.productIds || [] },
+              },
+            },
+            type: "ShopifyProduct",
+            firstOnly: false,
+          });
+        },
+      },
+    };
+
+    resolvers.ShopifyProduct.collections = {
+      type: ["ShopifyCollection"],
+      resolve(source: any, _args: any, context: any) {
+        return context.nodeModel.runQuery({
+          query: {
+            filter: {
+              productIds: { eq: source.shopifyId },
+            },
+          },
+          type: "ShopifyCollection",
+          firstOnly: false,
+        });
+      },
     };
   }
 
