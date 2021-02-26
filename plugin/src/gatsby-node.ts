@@ -233,25 +233,35 @@ async function sourceChangedNodes(
 
   const { fetchDestroyEventsSince } = eventsApi(pluginOptions);
   const destroyEvents = await fetchDestroyEventsSince(lastBuildTime);
+
+  gatsbyApi.reporter.info(
+    `${destroyEvents.length} items have been deleted since ${lastBuildTime}`
+  );
+
   if (destroyEvents.length) {
-    for (const nodeType of shopifyNodeTypes) {
-      gatsbyApi.getNodesByType(nodeType).forEach((node) => {
-        /* This is currently untested because all the destroy events for the
-         * swag store are for products that this POC has never sourced!
-         *
-         * Also to consider: what about cascade delete? If a product is removed
-         * here, do we clean up variants, metafields, images, etc?
-         */
-        const event = destroyEvents.find(
-          (e: { subject_id: number; subject_type: string }) =>
-            e.subject_id === parseInt(node.shopifyId as string, 10) &&
-            node.internal.type === `Shopify${e.subject_type}`
-        );
-        if (event) {
-          gatsbyApi.actions.deleteNode(node);
-        }
+    gatsbyApi.reporter.info(`Removing matching nodes from Gatsby`);
+    destroyEvents.forEach((e) => {
+      /**
+       * When we remove gatsby-node-helpers we'll be able to skip this part,
+       * but for now we'll have to use the same createNodeId function that
+       * this library provides.
+       */
+      const nodeHelpers = createNodeHelpers({
+        typePrefix: `Shopify`,
+        createNodeId: gatsbyApi.createNodeId,
+        createContentDigest: gatsbyApi.createContentDigest,
       });
-    }
+
+      const nodeId = nodeHelpers.createNodeId(e.subject_id.toString());
+      const node = gatsbyApi.getNode(nodeId);
+
+      if (node) {
+        gatsbyApi.reporter.info(
+          `Removing ${node.internal.type}: ${node.id} with shopifyId ${e.subject_id}`
+        );
+        gatsbyApi.actions.deleteNode(node);
+      }
+    });
   }
 }
 
