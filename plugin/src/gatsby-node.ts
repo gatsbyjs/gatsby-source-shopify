@@ -241,12 +241,24 @@ async function sourceChangedNodes(
   if (destroyEvents.length) {
     gatsbyApi.reporter.info(`Removing matching nodes from Gatsby`);
     destroyEvents.forEach((e) => {
-      const node = gatsbyApi
-        .getNodesByType(`Shopify${e.subject_type}`)
-        .find((n) => e.subject_id === parseInt(n.shopifyId as string, 10));
+      /**
+       * When we remove gatsby-node-helpers we'll be able to skip this part,
+       * but for now we'll have to use the same createNodeId function that
+       * this library provides.
+       */
+      const nodeHelpers = createNodeHelpers({
+        typePrefix: `Shopify`,
+        createNodeId: gatsbyApi.createNodeId,
+        createContentDigest: gatsbyApi.createContentDigest,
+      });
+
+      const nodeId = nodeHelpers.createNodeId(e.subject_id.toString());
+      const node = gatsbyApi.getNode(nodeId);
 
       if (node) {
-        gatsbyApi.reporter.info(`Removing ${node.internal.type}: ${node.id}`);
+        gatsbyApi.reporter.info(
+          `Removing ${node.internal.type}: ${node.id} with shopifyId ${e.subject_id}`
+        );
         gatsbyApi.actions.deleteNode(node);
       }
     });
