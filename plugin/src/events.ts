@@ -1,10 +1,15 @@
 import { makeShopifyFetch } from "./rest";
 
+interface Event {
+  subject_id: number;
+  subject_type: string;
+}
+
 export function eventsApi(options: ShopifyPluginOptions) {
   const shopifyFetch = makeShopifyFetch(options);
 
   return {
-    async fetchDestroyEventsSince(date: Date) {
+    async fetchDestroyEventsSince(date: Date): Promise<Event[]> {
       let resp = await shopifyFetch(
         `/events.json?limit=250&verb=destroy&created_at_min=${date.toISOString()}`
       );
