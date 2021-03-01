@@ -252,7 +252,8 @@ async function sourceChangedNodes(
         createContentDigest: gatsbyApi.createContentDigest,
       });
 
-      const nodeId = nodeHelpers.createNodeId(e.subject_id.toString());
+      const id = `gid://shopify/${e.subject_type}/${e.subject_id}`;
+      const nodeId = nodeHelpers.createNodeId(id);
       const node = gatsbyApi.getNode(nodeId);
 
       if (node) {
