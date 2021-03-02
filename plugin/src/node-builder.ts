@@ -119,7 +119,9 @@ export function nodeBuilder(
   } = {};
   const getFactory = (remoteType: string) => {
     if (!factoryMap[remoteType]) {
-      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType);
+      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType, {
+        idIsGloballyUnique: true,
+      });
     }
     return factoryMap[remoteType];
   };
