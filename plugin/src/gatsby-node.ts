@@ -252,7 +252,9 @@ async function sourceChangedNodes(
         createContentDigest: gatsbyApi.createContentDigest,
       });
 
-      const nodeId = nodeHelpers.createNodeId(e.subject_id.toString());
+      const id = `gid://shopify/${e.subject_type}/${e.subject_id}`;
+      gatsbyApi.reporter.info(`Looking up node with ID: ${id}`);
+      const nodeId = nodeHelpers.createNodeId(id);
       const node = gatsbyApi.getNode(nodeId);
 
       if (node) {
@@ -260,6 +262,8 @@ async function sourceChangedNodes(
           `Removing ${node.internal.type}: ${node.id} with shopifyId ${e.subject_id}`
         );
         gatsbyApi.actions.deleteNode(node);
+      } else {
+        gatsbyApi.reporter.info(`Couldn't find node with ID: ${id}`);
       }
     });
   }

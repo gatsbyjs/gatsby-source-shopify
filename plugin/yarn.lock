@@ -462,10 +462,10 @@ gatsby-core-utils@^2.0.0-next.0:
     tmp "^0.2.1"
     xdg-basedir "^4.0.0"
 
-gatsby-node-helpers@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/gatsby-node-helpers/-/gatsby-node-helpers-1.0.3.tgz#bf87fc301de90ed9806bbea74325acb7606887b9"
-  integrity sha512-qIBK7V77A0gpHz20H8T4dWn2gc0CJPqM3mUYeOFRTPcUgBbVKczehyrrtSlmgq+NOcqKrA+vbEkNjzx11+Equg==
+gatsby-node-helpers@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/gatsby-node-helpers/-/gatsby-node-helpers-1.2.1.tgz#9d21adcaa2e02baa67d4bdf16a3bb27a3a84d553"
+  integrity sha512-fYNQhp7/3sBUkb9QR31CZm6XChN2A78npow/PNglx5U1Sv8Zmd07Io8Mc2K7UO2hUCCSuAmgkSqlqq71NupdQA==
   dependencies:
     camel-case "^4.1.2"
     pascal-case "^3.1.2"
