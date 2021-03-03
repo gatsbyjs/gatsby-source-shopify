@@ -96,10 +96,10 @@ const processorMap: ProcessorMap = {
     }
   },
   Collection: async (node, gatsbyApi, options) => {
-    processChildImage(node, "image", gatsbyApi, options);
+    return processChildImage(node, "image", gatsbyApi, options);
   },
   Product: async (node, gatsbyApi, options) => {
-    processChildImage(node, "featuredImage", gatsbyApi, options);
+    return processChildImage(node, "featuredImage", gatsbyApi, options);
   },
 };
 
