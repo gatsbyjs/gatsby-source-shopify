@@ -90,64 +90,37 @@ const processorMap: ProcessorMap = {
   },
 };
 
-async function buildFromId(
-  obj: Record<string, any>,
-  getFactory: (remoteType: string) => (node: BulkResult) => NodeInput,
-  gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
-) {
-  const [, remoteType] = obj.id.match(pattern) || [];
-
-  const Node = getFactory(remoteType);
-  const processor = processorMap[remoteType] || (() => Promise.resolve());
-
-  attachParentId(obj);
-  const node = Node(obj);
-  await processor(node, gatsbyApi, options);
-
-  return node;
-}
-
 export function nodeBuilder(
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ): NodeBuilder {
-  const factoryMap: {
-    [k: string]: (node: BulkResult) => NodeInput;
-  } = {};
-  function createNodeFactory(remoteType: string) {
-    return (result: BulkResult) => {
-      const id = result.id as string;
-      if (!id) {
-        throw new Error("Cannot build node without an ID");
+  return {
+    async buildNode(result: BulkResult) {
+      if (!pattern.test(result.id)) {
+        throw new Error(
+          `Expected an ID in the format gid://shopify/<typename>/<id>`
+        );
       }
 
-      return {
+      const [, remoteType] = result.id.match(pattern) || [];
+
+      const processor = processorMap[remoteType] || (() => Promise.resolve());
+
+      attachParentId(result);
+
+      const node = {
         ...result,
-        shopifyId: id,
-        id: gatsbyApi.createNodeId(id),
+        shopifyId: result.id,
+        id: gatsbyApi.createNodeId(result.id),
         internal: {
           type: `Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };
-    };
-  }
 
-  const getFactory = (remoteType: string) => {
-    if (!factoryMap[remoteType]) {
-      factoryMap[remoteType] = createNodeFactory(remoteType);
-    }
-    return factoryMap[remoteType];
-  };
+      await processor(node, gatsbyApi, options);
 
-  return {
-    async buildNode(obj: Record<string, any>) {
-      if (obj.id) {
-        return await buildFromId(obj, getFactory, gatsbyApi, options);
-      }
-
-      throw new Error(`Cannot create a node without type information`);
+      return node;
     },
   };
 }
