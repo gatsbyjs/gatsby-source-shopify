@@ -65,6 +65,29 @@ const processorMap: ProcessorMap = {
       node.localFile = fileNodeId;
     }
   },
+  Collection: async (node, gatsbyApi, options) => {
+    if (options.downloadImages) {
+      const image = node.image as
+        | {
+            originalSrc: string;
+            localFile: string | undefined;
+          }
+        | undefined;
+
+      if (image) {
+        const url = image.originalSrc;
+        const fileNodeId = await downloadImageAndCreateFileNode(
+          {
+            url,
+            nodeId: node.id,
+          },
+          gatsbyApi
+        );
+
+        image.localFile = fileNodeId;
+      }
+    }
+  },
   Product: async (node, gatsbyApi, options) => {
     if (options.downloadImages) {
       const featuredImage = node.featuredImage as
