@@ -45,6 +45,36 @@ interface ProcessorMap {
   ) => Promise<void>;
 }
 
+async function processChildImage(
+  node: NodeInput,
+  childKey: string,
+  gatsbyApi: SourceNodesArgs,
+  options: ShopifyPluginOptions
+) {
+  if (options.downloadImages) {
+    const image = node[childKey] as
+      | {
+          id: string;
+          originalSrc: string;
+          localFile: string | undefined;
+        }
+      | undefined;
+
+    if (image) {
+      const url = image.originalSrc;
+      const fileNodeId = await downloadImageAndCreateFileNode(
+        {
+          url,
+          nodeId: node.id,
+        },
+        gatsbyApi
+      );
+
+      image.localFile = fileNodeId;
+    }
+  }
+}
+
 const processorMap: ProcessorMap = {
   LineItem: async (node) => {
     const lineItem = node;
@@ -65,28 +95,11 @@ const processorMap: ProcessorMap = {
       node.localFile = fileNodeId;
     }
   },
+  Collection: async (node, gatsbyApi, options) => {
+    processChildImage(node, "image", gatsbyApi, options);
+  },
   Product: async (node, gatsbyApi, options) => {
-    if (options.downloadImages) {
-      const featuredImage = node.featuredImage as
-        | {
-            originalSrc: string;
-            localFile: string | undefined;
-          }
-        | undefined;
-
-      if (featuredImage) {
-        const url = featuredImage.originalSrc;
-        const fileNodeId = await downloadImageAndCreateFileNode(
-          {
-            url,
-            nodeId: node.id,
-          },
-          gatsbyApi
-        );
-
-        featuredImage.localFile = fileNodeId;
-      }
-    }
+    processChildImage(node, "featuredImage", gatsbyApi, options);
   },
 };
 

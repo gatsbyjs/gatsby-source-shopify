@@ -171,6 +171,7 @@ const shopifyNodeTypes = [
   `ShopifyProduct`,
   `ShopifyCollection`,
   `ShopifyProductImage`,
+  `ShopifyCollectionImage`,
   `ShopifyProductFeaturedImage`,
   `ShopifyProductVariant`,
   `ShopifyProductVariantPricePair`,
@@ -294,6 +295,10 @@ export function createSchemaCustomization({
       localFile: File @link
     }
 
+    type ShopifyCollectionImage {
+      localFile: File @link
+    }
+
     type ShopifyMetafield implements Node {
       productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
     }
@@ -383,6 +388,10 @@ export function createResolvers(
     };
 
     resolvers.ShopifyProductFeaturedImage = {
+      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+    };
+
+    resolvers.ShopifyCollectionImage = {
       gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
     };
   }
