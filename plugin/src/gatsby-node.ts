@@ -1,5 +1,4 @@
 import fetch from "node-fetch";
-import { createNodeHelpers } from "gatsby-node-helpers";
 import { createInterface } from "readline";
 import { createOperations, ShopifyBulkOperation } from "./operations";
 import { nodeBuilder } from "./node-builder";
@@ -43,25 +42,13 @@ function makeSourceFromOperation(
   options: ShopifyPluginOptions
 ) {
   return async function sourceFromOperation(op: ShopifyBulkOperation) {
-    const {
-      reporter,
-      actions,
-      createNodeId,
-      createContentDigest,
-      cache,
-    } = gatsbyApi;
+    const { reporter, actions, cache } = gatsbyApi;
 
     try {
       const operationTimer = reporter.activityTimer(
         `Source from bulk operation ${op.name}`
       );
       operationTimer.start();
-
-      const nodeHelpers = createNodeHelpers({
-        typePrefix: `Shopify`,
-        createNodeId,
-        createContentDigest,
-      });
 
       await finishLastOperation();
 
@@ -120,7 +107,7 @@ function makeSourceFromOperation(
 
       await Promise.all(
         op
-          .process(objects, nodeBuilder(nodeHelpers, gatsbyApi, options))
+          .process(objects, nodeBuilder(gatsbyApi, options))
           .map(async (promise) => {
             const node = await promise;
             actions.createNode(node);
@@ -241,20 +228,9 @@ async function sourceChangedNodes(
   if (destroyEvents.length) {
     gatsbyApi.reporter.info(`Removing matching nodes from Gatsby`);
     destroyEvents.forEach((e) => {
-      /**
-       * When we remove gatsby-node-helpers we'll be able to skip this part,
-       * but for now we'll have to use the same createNodeId function that
-       * this library provides.
-       */
-      const nodeHelpers = createNodeHelpers({
-        typePrefix: `Shopify`,
-        createNodeId: gatsbyApi.createNodeId,
-        createContentDigest: gatsbyApi.createContentDigest,
-      });
-
       const id = `gid://shopify/${e.subject_type}/${e.subject_id}`;
       gatsbyApi.reporter.info(`Looking up node with ID: ${id}`);
-      const nodeId = nodeHelpers.createNodeId(id);
+      const nodeId = gatsbyApi.createNodeId(id);
       const node = gatsbyApi.getNode(nodeId);
 
       if (node) {

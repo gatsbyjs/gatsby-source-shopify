@@ -1,5 +1,4 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
-import { IdentifiableRecord, NodeHelpers } from "gatsby-node-helpers";
 import { createRemoteFileNode } from "gatsby-source-filesystem";
 
 // 'gid://shopify/Metafield/6936247730264'
@@ -93,7 +92,7 @@ const processorMap: ProcessorMap = {
 
 async function buildFromId(
   obj: Record<string, any>,
-  getFactory: (remoteType: string) => (node: IdentifiableRecord) => NodeInput,
+  getFactory: (remoteType: string) => (node: BulkResult) => NodeInput,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ) {
@@ -110,18 +109,34 @@ async function buildFromId(
 }
 
 export function nodeBuilder(
-  nodeHelpers: NodeHelpers,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ): NodeBuilder {
   const factoryMap: {
-    [k: string]: (node: IdentifiableRecord) => NodeInput;
+    [k: string]: (node: BulkResult) => NodeInput;
   } = {};
+  function createNodeFactory(remoteType: string) {
+    return (result: BulkResult) => {
+      const id = result.id as string;
+      if (!id) {
+        throw new Error("Cannot build node without an ID");
+      }
+
+      return {
+        ...result,
+        shopifyId: id,
+        id: gatsbyApi.createNodeId(id),
+        internal: {
+          type: `Shopify${remoteType}`,
+          contentDigest: gatsbyApi.createContentDigest(result),
+        },
+      };
+    };
+  }
+
   const getFactory = (remoteType: string) => {
     if (!factoryMap[remoteType]) {
-      factoryMap[remoteType] = nodeHelpers.createNodeFactory(remoteType, {
-        idIsGloballyUnique: true,
-      });
+      factoryMap[remoteType] = createNodeFactory(remoteType);
     }
     return factoryMap[remoteType];
   };
