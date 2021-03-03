@@ -96,13 +96,13 @@ async function buildFromId(
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ) {
-  const [shopifyId, remoteType] = obj.id.match(pattern) || [];
+  const [, remoteType] = obj.id.match(pattern) || [];
 
   const Node = getFactory(remoteType);
   const processor = processorMap[remoteType] || (() => Promise.resolve());
 
   attachParentId(obj);
-  const node = Node({ ...obj, id: shopifyId });
+  const node = Node(obj);
   await processor(node, gatsbyApi, options);
 
   return node;
