@@ -12,6 +12,7 @@ import {
 } from "gatsby";
 import { getGatsbyImageResolver } from "gatsby-plugin-image/graphql-utils";
 import { resolveGatsbyImageData } from "./resolve-gatsby-image-data";
+import { OperationError } from "./errors";
 
 const LAST_SHOPIFY_BULK_OPERATION = `LAST_SHOPIFY_BULK_OPERATION`;
 
@@ -52,7 +53,7 @@ function makeSourceFromOperation(
 
       await finishLastOperation();
 
-      reporter.info(`Initiating bulk operation query`);
+      reporter.info(`Initiating bulk operation query ${op.name}`);
       const {
         bulkOperationRunQuery: { userErrors, bulkOperation },
       } = await op.execute();
@@ -118,15 +119,27 @@ function makeSourceFromOperation(
 
       await cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
     } catch (e) {
-      reporter.panic(
-        {
-          id: errorCodes.unknownSourcingFailure,
-          context: {
-            sourceMessage: `Could not source from bulk operation`,
-          },
+      if (e instanceof OperationError) {
+        const code = errorCodes.bulkOperationFailed;
+
+        if (e.node.errorCode === `ACCESS_DENIED`) {
+          reporter.panic({
+            id: code,
+            context: {
+              sourceMessage: `Your credentials don't have access to a resource you requested`,
+            },
+            error: e,
+          });
+        }
+      }
+
+      reporter.panic({
+        id: errorCodes.unknownSourcingFailure,
+        context: {
+          sourceMessage: `Could not source from bulk operation`,
         },
-        e
-      );
+        error: e,
+      });
     }
   };
 }

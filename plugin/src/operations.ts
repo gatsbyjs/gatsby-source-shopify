@@ -1,6 +1,7 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
 import { createClient } from "./client";
 import { collectionsProcessor } from "./processors";
+import { OperationError } from "./errors";
 
 import {
   OPERATION_STATUS_QUERY,
@@ -102,9 +103,9 @@ export function createOperations(
   async function completedOperation(
     operationId: string,
     interval = 1000
-  ): Promise<{ node: { objectCount: string; url: string } }> {
+  ): Promise<{ node: BulkOperationNode }> {
     const operation = await client.request<{
-      node: { status: string; objectCount: string; url: string };
+      node: BulkOperationNode;
     }>(OPERATION_BY_ID, {
       id: operationId,
     });
@@ -124,7 +125,7 @@ export function createOperations(
     }
 
     if (operation.node.status === "FAILED") {
-      throw operation;
+      throw new OperationError(operation.node);
     }
 
     if (operation.node.status === "COMPLETED") {
