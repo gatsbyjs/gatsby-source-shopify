@@ -13,3 +13,11 @@ interface NodeBuilder {
 
 type BulkResult = Record<string, any>;
 type BulkResults = BulkResult[];
+
+interface BulkOperationNode {
+  status: string;
+  objectCount: string;
+  url: string;
+  id: string;
+  errorCode: string;
+}
