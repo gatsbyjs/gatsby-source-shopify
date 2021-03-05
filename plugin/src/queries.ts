@@ -169,36 +169,27 @@ const ordersQuery = (dateString?: string) => `
 }
 `;
 
-const productsQuery = (dateString?: string) => `
-{
-  products${
-    dateString
-      ? `(query: "created_at:>='${dateString}' OR updated_at:>='${dateString}'")`
-      : ``
-  } {
-    edges {
-      node {
-        id
-        storefrontId
-        createdAt
-        description
-        descriptionHtml
-        featuredImage {
-          id
-          altText
-          height
-          width
-          originalSrc
-          transformedSrc
-        }
-        featuredMedia {
-          alt
-          mediaContentType
-          mediaErrors {
-            details
-          }
-          preview {
-            image {
+const productsQuery = (dateString?: string) => {
+  const filters = [`status:active`];
+  if (dateString) {
+    filters.push(
+      `created_at:>='${dateString}' OR updated_at:>='${dateString}'`
+    );
+  }
+
+  const queryString = filters.map((f) => `(${f})`).join(" AND ");
+
+  return `
+    {
+      products(query: "${queryString}") {
+        edges {
+          node {
+            id
+            storefrontId
+            createdAt
+            description
+            descriptionHtml
+            featuredImage {
               id
               altText
               height
@@ -206,105 +197,122 @@ const productsQuery = (dateString?: string) => `
               originalSrc
               transformedSrc
             }
-            status
-          }
-          status
-        }
-        feedback {
-          details {
-            app {
-              id
-            }
-            link {
-              label
-              url
-            }
-            messages {
-              field
-              message
-            }
-          }
-          summary
-        }
-        giftCardTemplateSuffix
-        handle
-        hasOnlyDefaultVariant
-        hasOutOfStockVariants
-        isGiftCard
-        legacyResourceId
-        mediaCount
-        onlineStorePreviewUrl
-        onlineStoreUrl
-        options {
-          id
-          name
-          position
-          values
-        }
-        priceRangeV2 {
-          maxVariantPrice {
-            amount
-            currencyCode
-          }
-          minVariantPrice {
-            amount
-            currencyCode
-          }
-        }
-        productType
-        publishedAt
-        requiresSellingPlan
-        sellingPlanGroupCount
-        seo {
-          description
-          title
-        }
-        status
-        tags
-        templateSuffix
-        title
-        totalInventory
-        totalVariants
-        tracksInventory
-        updatedAt
-        vendor
-        images {
-          edges {
-            node {
-              id
-              altText
-              src
-              originalSrc
-              width
-              height
-            }
-          }
-        }
-        variants {
-          edges {
-            node {
-              id
-              storefrontId
-              availableForSale
-              compareAtPrice
-              inventoryPolicy
-              inventoryQuantity
-              price
-              selectedOptions {
-                name
-                value
+            featuredMedia {
+              alt
+              mediaContentType
+              mediaErrors {
+                details
               }
-              sku
+              preview {
+                image {
+                  id
+                  altText
+                  height
+                  width
+                  originalSrc
+                  transformedSrc
+                }
+                status
+              }
+              status
+            }
+            feedback {
+              details {
+                app {
+                  id
+                }
+                link {
+                  label
+                  url
+                }
+                messages {
+                  field
+                  message
+                }
+              }
+              summary
+            }
+            giftCardTemplateSuffix
+            handle
+            hasOnlyDefaultVariant
+            hasOutOfStockVariants
+            isGiftCard
+            legacyResourceId
+            mediaCount
+            onlineStorePreviewUrl
+            onlineStoreUrl
+            options {
+              id
+              name
+              position
+              values
+            }
+            priceRangeV2 {
+              maxVariantPrice {
+                amount
+                currencyCode
+              }
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            productType
+            publishedAt
+            requiresSellingPlan
+            sellingPlanGroupCount
+            seo {
+              description
               title
-              metafields {
-                edges {
-                  node {
-                    description
-                    id
-                    key
-                    namespace
+            }
+            status
+            tags
+            templateSuffix
+            title
+            totalInventory
+            totalVariants
+            tracksInventory
+            updatedAt
+            vendor
+            images {
+              edges {
+                node {
+                  id
+                  altText
+                  src
+                  originalSrc
+                  width
+                  height
+                }
+              }
+            }
+            variants {
+              edges {
+                node {
+                  id
+                  storefrontId
+                  availableForSale
+                  compareAtPrice
+                  inventoryPolicy
+                  inventoryQuantity
+                  price
+                  selectedOptions {
+                    name
                     value
-                    valueType
+                  }
+                  sku
+                  title
+                  metafields {
+                    edges {
+                      node {
+                        description
+                        id
+                        key
+                        namespace
+                        value
+                        valueType
+                      }
+                    }
                   }
                 }
               }
@@ -313,9 +321,8 @@ const productsQuery = (dateString?: string) => `
         }
       }
     }
-  }
-}
-`;
+  `;
+};
 
 export const CREATE_PRODUCTS_OPERATION = bulkOperationQuery(productsQuery());
 export const CREATE_ORDERS_OPERATION = bulkOperationQuery(ordersQuery());
