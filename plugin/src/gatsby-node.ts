@@ -131,6 +131,14 @@ function makeSourceFromOperation(
             error: e,
           });
         }
+
+        reporter.panic({
+          id: errorCodes.unknownSourcingFailure,
+          context: {
+            sourceMessage: `Could not source from bulk operation: ${e.node.errorCode}`,
+          },
+          error: e,
+        });
       }
 
       reporter.panic({
