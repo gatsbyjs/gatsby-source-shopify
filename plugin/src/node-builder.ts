@@ -78,8 +78,10 @@ async function processChildImage(
 const processorMap: ProcessorMap = {
   LineItem: async (node) => {
     const lineItem = node;
-    lineItem.productId = (lineItem.product as { id: string }).id;
-    delete lineItem.product;
+    if (lineItem.product) {
+      lineItem.productId = (lineItem.product as BulkResult).id;
+      delete lineItem.product;
+    }
   },
   ProductImage: async (node, gatsbyApi, options) => {
     if (options.downloadImages) {
