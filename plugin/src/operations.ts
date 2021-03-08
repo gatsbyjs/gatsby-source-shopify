@@ -15,13 +15,21 @@ import {
   incrementalCollectionsQuery,
 } from "./queries";
 
+interface UserError {
+  field: string[];
+  message: string;
+}
+
 export interface BulkOperationRunQueryResponse {
   bulkOperationRunQuery: {
-    userErrors: Error[];
-    bulkOperation: {
-      id: string;
-    };
+    userErrors: UserError[];
+    bulkOperation: BulkOperationNode;
   };
+}
+
+export interface BulkOperationCancelResponse {
+  bulkOperation: BulkOperationNode;
+  userErrors: UserError[];
 }
 
 export interface ShopifyBulkOperation {
@@ -33,10 +41,19 @@ export interface ShopifyBulkOperation {
   ) => Promise<NodeInput>[];
 }
 
+type BulkOperationStatus =
+  | "CANCELED"
+  | "CANCELING"
+  | "COMPLETED"
+  | "CREATED"
+  | "EXPIRED"
+  | "FAILED"
+  | "RUNNING";
+
 interface CurrentBulkOperationResponse {
   currentBulkOperation: {
     id: string;
-    status: string;
+    status: BulkOperationStatus;
   };
 }
 
@@ -174,7 +191,9 @@ export function createOperations(
     ),
 
     cancelOperation(id: string) {
-      return client.request(CANCEL_OPERATION, { id });
+      return client.request<BulkOperationCancelResponse>(CANCEL_OPERATION, {
+        id,
+      });
     },
 
     finishLastOperation,
