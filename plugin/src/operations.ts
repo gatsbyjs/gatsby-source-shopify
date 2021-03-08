@@ -17,7 +17,7 @@ import {
 
 export interface BulkOperationRunQueryResponse {
   bulkOperationRunQuery: {
-    userErrors: Error[];
+    userErrors: { field: string[]; message: string }[];
     bulkOperation: {
       id: string;
     };
@@ -33,10 +33,19 @@ export interface ShopifyBulkOperation {
   ) => Promise<NodeInput>[];
 }
 
+type BulkOperationStatus =
+  | "CANCELED"
+  | "CANCELING"
+  | "COMPLETED"
+  | "CREATED"
+  | "EXPIRED"
+  | "FAILED"
+  | "RUNNING";
+
 interface CurrentBulkOperationResponse {
   currentBulkOperation: {
     id: string;
-    status: string;
+    status: BulkOperationStatus;
   };
 }
 

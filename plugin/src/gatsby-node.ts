@@ -60,13 +60,13 @@ function makeSourceFromOperation(
 
       if (userErrors.length) {
         reporter.panic(
-          {
+          userErrors.map((e) => ({
             id: errorCodes.bulkOperationFailed,
             context: {
-              sourceMessage: `Couldn't perform bulk operation`,
+              sourceMessage: `Couldn't initiate bulk operation query`,
             },
-          },
-          userErrors
+            error: new Error(`${e.field.join(".")}: ${e.message}`),
+          }))
         );
       }
 
