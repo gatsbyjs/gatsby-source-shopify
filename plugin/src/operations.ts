@@ -15,13 +15,21 @@ import {
   incrementalCollectionsQuery,
 } from "./queries";
 
+interface UserError {
+  field: string[];
+  message: string;
+}
+
 export interface BulkOperationRunQueryResponse {
   bulkOperationRunQuery: {
-    userErrors: { field: string[]; message: string }[];
-    bulkOperation: {
-      id: string;
-    };
+    userErrors: UserError[];
+    bulkOperation: BulkOperationNode;
   };
+}
+
+export interface BulkOperationCancelResponse {
+  bulkOperation: BulkOperationNode;
+  userErrors: UserError[];
 }
 
 export interface ShopifyBulkOperation {
@@ -183,7 +191,9 @@ export function createOperations(
     ),
 
     cancelOperation(id: string) {
-      return client.request(CANCEL_OPERATION, { id });
+      return client.request<BulkOperationCancelResponse>(CANCEL_OPERATION, {
+        id,
+      });
     },
 
     finishLastOperation,

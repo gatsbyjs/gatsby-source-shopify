@@ -16,8 +16,8 @@ type BulkResults = BulkResult[];
 
 interface BulkOperationNode {
   status: string;
-  objectCount: string;
+  objectCount: number;
   url: string;
   id: string;
-  errorCode: string;
+  errorCode: "ACCESS_DENIED" | "INTERNAL_SERVER_ERROR" | "TIMEOUT";
 }

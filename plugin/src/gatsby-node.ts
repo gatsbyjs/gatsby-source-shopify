@@ -36,9 +36,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
 
 function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
-  completedOperation: (
-    id: string
-  ) => Promise<{ node: { objectCount: string; url: string } }>,
+  completedOperation: (id: string) => Promise<{ node: BulkOperationNode }>,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ) {
@@ -78,7 +76,7 @@ function makeSourceFromOperation(
       let resp = await completedOperation(bulkOperation.id);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
 
-      if (parseInt(resp.node.objectCount, 10) === 0) {
+      if (resp.node.objectCount === 0) {
         reporter.info(`No data was returned for this operation`);
         operationTimer.end();
         return;
