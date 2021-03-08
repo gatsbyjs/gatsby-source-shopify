@@ -20,4 +20,5 @@ interface BulkOperationNode {
   url: string;
   id: string;
   errorCode: "ACCESS_DENIED" | "INTERNAL_SERVER_ERROR" | "TIMEOUT";
+  query: string;
 }

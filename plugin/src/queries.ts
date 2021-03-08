@@ -10,6 +10,7 @@ export const OPERATION_STATUS_QUERY = `
         fileSize
         url
         partialDataUrl
+        query
       }
     }
   `;
@@ -27,6 +28,7 @@ query OPERATION_BY_ID($id: ID!) {
       fileSize
       url
       partialDataUrl
+      query
     }
   }
 }
