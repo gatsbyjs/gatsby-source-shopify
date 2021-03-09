@@ -309,6 +309,7 @@ export function createSchemaCustomization({
     type ShopifyProduct implements Node {
       variants: [ShopifyProductVariant] @link(from: "id", by: "productId")
       images: [ShopifyProductImage] @link(from: "id", by: "productId")
+      collections: [ShopifyCollection] @link(from: "id", by: "productIds")
     }
 
     type ShopifyProductFeaturedImage {
@@ -378,23 +379,6 @@ export function createResolvers(
               },
             },
             type: "ShopifyProduct",
-            firstOnly: false,
-          });
-        },
-      },
-    };
-
-    resolvers.ShopifyProduct = {
-      collections: {
-        type: ["ShopifyCollection"],
-        resolve(source: any, _args: any, context: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productIds: { eq: source.id },
-              },
-            },
-            type: "ShopifyCollection",
             firstOnly: false,
           });
         },
