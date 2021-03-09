@@ -302,12 +302,13 @@ export function createSchemaCustomization({
 }: CreateSchemaCustomizationArgs) {
   actions.createTypes(`
     type ShopifyProductVariant implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
-      metafields: [ShopifyMetafield]
+      product: ShopifyProduct @link(from: "productId", by: "id")
+      metafields: [ShopifyMetafield] @link(from: "id", by: "productVariantId")
     }
 
     type ShopifyProduct implements Node {
-      variants: [ShopifyProductVariant]
+      variants: [ShopifyProductVariant] @link(from: "id", by: "productId")
+      images: [ShopifyProductImage] @link(from: "id", by: "productId")
     }
 
     type ShopifyProductFeaturedImage {
@@ -319,25 +320,22 @@ export function createSchemaCustomization({
     }
 
     type ShopifyMetafield implements Node {
-      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
-    }
-
-    type ShopifyProductVariantPricePair implements Node {
-      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "shopifyId")
+      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "id")
     }
 
     type ShopifyOrder implements Node {
-      lineItems: [ShopifyLineItem]
+      lineItems: [ShopifyLineItem] @link(from: "id", by: "orderId")
     }
 
     type ShopifyLineItem implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+      product: ShopifyProduct @link(from: "productId", by: "id")
+      order: ShopifyOrder @link(from: "orderId", by: "id")
     }
 
     type ShopifyProductImage implements Node {
       altText: String
       originalSrc: String!
-      product: ShopifyProduct @link(from: "productId", by: "shopifyId")
+      product: ShopifyProduct @link(from: "productId", by: "id")
       localFile: File @link
     }
   `);
@@ -352,54 +350,7 @@ export function createResolvers(
   { createResolvers }: CreateResolversArgs,
   { downloadImages, shopifyConnections = [] }: ShopifyPluginOptions
 ) {
-  const resolvers: Record<string, any> = {
-    ShopifyProductVariant: {
-      metafields: {
-        type: ["ShopifyMetafield"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productVariantId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyMetafield",
-            firstOnly: false,
-          });
-        },
-      },
-    },
-    ShopifyProduct: {
-      images: {
-        type: ["ShopifyProductImage"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyProductImage",
-            firstOnly: false,
-          });
-        },
-      },
-      variants: {
-        type: ["ShopifyProductVariant"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                productId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyProductVariant",
-            firstOnly: false,
-          });
-        },
-      },
-    },
-  };
+  const resolvers: Record<string, any> = {};
 
   if (!downloadImages) {
     resolvers.ShopifyProductImage = {
@@ -412,25 +363,6 @@ export function createResolvers(
 
     resolvers.ShopifyCollectionImage = {
       gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-    };
-  }
-
-  if (shopifyConnections.includes("orders")) {
-    resolvers.ShopifyOrder = {
-      lineItems: {
-        type: ["ShopifyLineItem"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                orderId: { eq: source.shopifyId },
-              },
-            },
-            type: "ShopifyLineItem",
-            firstOnly: false,
-          });
-        },
-      },
     };
   }
 
@@ -452,18 +384,20 @@ export function createResolvers(
       },
     };
 
-    resolvers.ShopifyProduct.collections = {
-      type: ["ShopifyCollection"],
-      resolve(source: any, _args: any, context: any) {
-        return context.nodeModel.runQuery({
-          query: {
-            filter: {
-              productIds: { eq: source.shopifyId },
+    resolvers.ShopifyProduct = {
+      collections: {
+        type: ["ShopifyCollection"],
+        resolve(source: any, _args: any, context: any) {
+          return context.nodeModel.runQuery({
+            query: {
+              filter: {
+                productIds: { eq: source.shopifyId },
+              },
             },
-          },
-          type: "ShopifyCollection",
-          firstOnly: false,
-        });
+            type: "ShopifyCollection",
+            firstOnly: false,
+          });
+        },
       },
     };
   }
