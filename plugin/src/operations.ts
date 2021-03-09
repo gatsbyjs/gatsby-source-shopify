@@ -57,7 +57,7 @@ interface CurrentBulkOperationResponse {
   };
 }
 
-const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`];
+const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`, `EXPIRED`];
 
 function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {
   return objects.map(builder.buildNode);
