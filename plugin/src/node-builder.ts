@@ -76,10 +76,12 @@ async function processChildImage(
 }
 
 const processorMap: ProcessorMap = {
-  LineItem: async (node) => {
+  LineItem: async (node, gatsbyApi) => {
     const lineItem = node;
     if (lineItem.product) {
-      lineItem.productId = (lineItem.product as BulkResult).id;
+      lineItem.productId = gatsbyApi.createNodeId(
+        (lineItem.product as BulkResult).id
+      );
       delete lineItem.product;
     }
   },

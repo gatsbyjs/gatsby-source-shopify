@@ -312,6 +312,10 @@ export function createSchemaCustomization({
       collections: [ShopifyCollection] @link(from: "id", by: "productIds")
     }
 
+    type ShopifyCollection implements Node {
+      products: [ShopifyProduct] @link(from: "productIds", by: "id")
+    }
+
     type ShopifyProductFeaturedImage {
       localFile: File @link
     }
@@ -342,51 +346,27 @@ export function createSchemaCustomization({
   `);
 }
 
-/**
- * FIXME
- *
- * What are the types for the resolve functions?
- */
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages, shopifyConnections = [] }: ShopifyPluginOptions
+  { downloadImages }: ShopifyPluginOptions
 ) {
-  const resolvers: Record<string, any> = {};
-
   if (!downloadImages) {
-    resolvers.ShopifyProductImage = {
-      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-    };
+    const resolvers = {
+      ShopifyProductImage: {
+        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+      },
 
-    resolvers.ShopifyProductFeaturedImage = {
-      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-    };
+      ShopifyProductFeaturedImage: {
+        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+      },
 
-    resolvers.ShopifyCollectionImage = {
-      gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-    };
-  }
-
-  if (shopifyConnections.includes("collections")) {
-    resolvers.ShopifyCollection = {
-      products: {
-        type: ["ShopifyProduct"],
-        resolve(source: any, _args: any, context: any, _info: any) {
-          return context.nodeModel.runQuery({
-            query: {
-              filter: {
-                id: { in: source.productIds || [] },
-              },
-            },
-            type: "ShopifyProduct",
-            firstOnly: false,
-          });
-        },
+      ShopifyCollectionImage: {
+        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
     };
-  }
 
-  createResolvers(resolvers);
+    createResolvers(resolvers);
+  }
 }
 
 interface ErrorContext {
