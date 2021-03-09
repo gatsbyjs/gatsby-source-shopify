@@ -106,7 +106,7 @@ function makeSourceFromOperation(
 
       await Promise.all(
         op
-          .process(objects, nodeBuilder(gatsbyApi, options))
+          .process(objects, nodeBuilder(gatsbyApi, options), gatsbyApi)
           .map(async (promise) => {
             const node = await promise;
             actions.createNode(node);
@@ -374,7 +374,7 @@ export function createResolvers(
           return context.nodeModel.runQuery({
             query: {
               filter: {
-                shopifyId: { in: source.productIds || [] },
+                id: { in: source.productIds || [] },
               },
             },
             type: "ShopifyProduct",
@@ -391,7 +391,7 @@ export function createResolvers(
           return context.nodeModel.runQuery({
             query: {
               filter: {
-                productIds: { eq: source.shopifyId },
+                productIds: { eq: source.id },
               },
             },
             type: "ShopifyCollection",
