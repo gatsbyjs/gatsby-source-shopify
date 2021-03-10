@@ -37,7 +37,8 @@ export interface ShopifyBulkOperation {
   name: string;
   process: (
     objects: BulkResults,
-    nodeBuilder: NodeBuilder
+    nodeBuilder: NodeBuilder,
+    gatsbyApi: SourceNodesArgs
   ) => Promise<NodeInput>[];
 }
 
@@ -76,10 +77,7 @@ export function createOperations(
   function createOperation(
     operationQuery: string,
     name: string,
-    process?: (
-      objects: BulkResults,
-      nodeBuilder: NodeBuilder
-    ) => Promise<NodeInput>[]
+    process?: ShopifyBulkOperation["process"]
   ): ShopifyBulkOperation {
     return {
       execute: () =>

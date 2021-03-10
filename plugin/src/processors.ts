@@ -1,9 +1,10 @@
-import { NodeInput } from "gatsby";
+import { NodeInput, SourceNodesArgs } from "gatsby";
 import { pattern as idPattern } from "./node-builder";
 
 export function collectionsProcessor(
   objects: BulkResults,
-  builder: NodeBuilder
+  builder: NodeBuilder,
+  gatsbyApi: SourceNodesArgs
 ): Promise<NodeInput>[] {
   const promises = [];
 
@@ -26,7 +27,7 @@ export function collectionsProcessor(
          * products all the way up until we get to the parent collection.
          */
         if (siblingRemoteType === `Product`) {
-          productIds.push(siblingId);
+          productIds.push(gatsbyApi.createNodeId(siblingId));
         }
 
         j--;
@@ -41,7 +42,9 @@ export function collectionsProcessor(
       promises.push(builder.buildNode(collection));
 
       const nextSlice = objects.slice(0, j);
-      return promises.concat(collectionsProcessor(nextSlice, builder));
+      return promises.concat(
+        collectionsProcessor(nextSlice, builder, gatsbyApi)
+      );
     } else {
       promises.push(builder.buildNode(result));
     }
