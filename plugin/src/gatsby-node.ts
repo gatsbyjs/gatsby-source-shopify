@@ -76,7 +76,7 @@ function makeSourceFromOperation(
       let resp = await completedOperation(bulkOperation.id);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
 
-      if (resp.node.objectCount === 0) {
+      if (parseInt(resp.node.objectCount, 10) === 0) {
         reporter.info(`No data was returned for this operation`);
         operationTimer.end();
         return;
