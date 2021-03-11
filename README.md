@@ -1,3 +1,6 @@
+![ci status](https://github.com/gatsbyjs/gatsby-source-shopify-experimental/actions/workflows/ci.yml/badge.svg)
+
+
 # gatsby-source-shopify-experimental
 
 A scalable solution for sourcing data from Shopify.
