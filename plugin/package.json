@@ -3,9 +3,10 @@
   "version": "1.12.6",
   "description": "",
   "scripts": {
-    "watch": "tsc-watch",
-    "build": "tsc",
-    "prepublish": "yarn build && cp ../README.md ."
+    "watch": "tsc-watch --outDir .",
+    "build": "tsc --outDir .",
+    "prepublish": "yarn build && cp ../README.md .",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -22,8 +23,12 @@
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.20",
     "gatsby-plugin-image": "^1.0.0-next.2",
+    "jest": "^26.6.3",
+    "msw": "^0.27.1",
     "prettier": "^2.2.1",
+    "ts-jest": "^26.5.3",
     "tsc-watch": "^4.2.9",
     "typescript": "^4.2.3"
   },
