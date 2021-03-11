@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc.git"
+    "url": "git+https://github.com/gatsbyjs/gatsby-source-shopify-experimental.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc/issues"
+    "url": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental/issues"
   },
-  "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc#readme",
+  "homepage": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental#readme",
   "dependencies": {
     "gatsby-source-filesystem": "^2.10.0",
     "node-fetch": "^2.6.1"
