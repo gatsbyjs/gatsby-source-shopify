@@ -13,7 +13,6 @@ export function createClient(options: ShopifyPluginOptions) {
     variables?: Record<string, any>,
     retries = 0
   ): Promise<T> {
-    console.info(`Attempting graphql fetch`);
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -26,7 +25,6 @@ export function createClient(options: ShopifyPluginOptions) {
     });
 
     if (!response.ok) {
-      console.error(response);
       const waitTime = 2 ** (retries + 1) + 500;
       if (response.status >= 500 && waitTime < MAX_BACKOFF_MILLISECONDS) {
         await new Promise((resolve) => setTimeout(resolve, waitTime));
