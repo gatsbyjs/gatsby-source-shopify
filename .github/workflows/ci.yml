@@ -25,6 +25,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: yarn install
-    - run: cd plugin
-    - run: yarn test
+    - name: Install dependencies
+      run: yarn install
+    - name: Run tests
+      working-directory: ./plugin
+      run: yarn test
