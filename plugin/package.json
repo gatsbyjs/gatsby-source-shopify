@@ -1,6 +1,6 @@
 {
   "name": "gatsby-source-shopify-experimental",
-  "version": "1.12.5",
+  "version": "1.12.6",
   "description": "",
   "scripts": {
     "watch": "tsc-watch",
@@ -9,23 +9,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc.git"
+    "url": "git+https://github.com/gatsbyjs/gatsby-source-shopify-experimental.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc/issues"
+    "url": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental/issues"
   },
-  "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify-graphql-poc#readme",
+  "homepage": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental#readme",
   "dependencies": {
     "gatsby-source-filesystem": "^2.10.0",
-    "node-fetch": "^2.6.1",
-    "typescript": "^4.1.3"
+    "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "gatsby-plugin-image": "^1.0.0-next.2",
     "prettier": "^2.2.1",
-    "tsc-watch": "^4.2.9"
+    "tsc-watch": "^4.2.9",
+    "typescript": "^4.2.3"
   },
   "peerDependencies": {
     "gatsby-plugin-image": "^1.0.0-next.2"
