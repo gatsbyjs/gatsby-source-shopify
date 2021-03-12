@@ -42,13 +42,6 @@ export interface ShopifyBulkOperation {
   ) => Promise<NodeInput>[];
 }
 
-interface CurrentBulkOperationResponse {
-  currentBulkOperation: {
-    id: string;
-    status: BulkOperationStatus;
-  };
-}
-
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`, `EXPIRED`];
 
 function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {

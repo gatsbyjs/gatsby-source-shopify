@@ -1,5 +1,5 @@
 export const OPERATION_STATUS_QUERY = `
-    query {
+    query OPERATION_STATUS {
       currentBulkOperation {
         id
         status
@@ -50,7 +50,7 @@ mutation CANCEL_OPERATION($id: ID!) {
 
 function bulkOperationQuery(query: string) {
   return `
-    mutation {
+    mutation INITIATE_BULK_OPERATION {
       bulkOperationRunQuery(
       query: """
         ${query}

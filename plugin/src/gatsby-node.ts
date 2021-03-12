@@ -1,7 +1,4 @@
-import fetch from "node-fetch";
-import { createInterface } from "readline";
-import { createOperations, ShopifyBulkOperation } from "./operations";
-import { nodeBuilder } from "./node-builder";
+import { createOperations } from "./operations";
 import { eventsApi } from "./events";
 import {
   CreateResolversArgs,
@@ -12,14 +9,9 @@ import {
 } from "gatsby";
 import { getGatsbyImageResolver } from "gatsby-plugin-image/graphql-utils";
 import { resolveGatsbyImageData } from "./resolve-gatsby-image-data";
-import { OperationError } from "./errors";
-
-const LAST_SHOPIFY_BULK_OPERATION = `LAST_SHOPIFY_BULK_OPERATION`;
-
-const errorCodes = {
-  bulkOperationFailed: "111000",
-  unknownSourcingFailure: "111001",
-};
+import { pluginErrorCodes as errorCodes } from "./errors";
+import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
+import { makeSourceFromOperation } from "./make-source-from-operation";
 
 export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
   return Joi.object({
@@ -32,142 +24,6 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
       .default([])
       .items(Joi.string().valid("orders", "collections")),
   });
-}
-
-function makeSourceFromOperation(
-  finishLastOperation: () => Promise<void>,
-  completedOperation: (id: string) => Promise<{ node: BulkOperationNode }>,
-  cancelOperationInProgress: () => Promise<void>,
-  gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
-) {
-  return async function sourceFromOperation(
-    op: ShopifyBulkOperation
-  ): Promise<void> {
-    const { reporter, actions, cache } = gatsbyApi;
-
-    const operationTimer = reporter.activityTimer(
-      `Source from bulk operation ${op.name}`
-    );
-
-    operationTimer.start();
-
-    try {
-      const isProd = process.env.IS_PRODUCTION_BRANCH === "true";
-
-      if (isProd) {
-        await cancelOperationInProgress();
-      } else {
-        await finishLastOperation();
-      }
-
-      reporter.info(`Initiating bulk operation query ${op.name}`);
-      const {
-        bulkOperationRunQuery: { userErrors, bulkOperation },
-      } = await op.execute();
-
-      if (userErrors.length) {
-        reporter.panic(
-          userErrors.map((e) => ({
-            id: errorCodes.bulkOperationFailed,
-            context: {
-              sourceMessage: `Couldn't initiate bulk operation query`,
-            },
-            error: new Error(`${e.field.join(".")}: ${e.message}`),
-          }))
-        );
-      }
-
-      operationTimer.setStatus(
-        `Polling bulk operation ${op.name}: ${bulkOperation.id}`
-      );
-      await cache.set(LAST_SHOPIFY_BULK_OPERATION, bulkOperation.id);
-
-      let resp = await completedOperation(bulkOperation.id);
-      reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
-
-      if (parseInt(resp.node.objectCount, 10) === 0) {
-        reporter.info(`No data was returned for this operation`);
-        operationTimer.end();
-        return;
-      }
-
-      operationTimer.setStatus(
-        `Fetching ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
-      );
-
-      const results = await fetch(resp.node.url);
-
-      operationTimer.setStatus(
-        `Processing ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
-      );
-      const rl = createInterface({
-        input: results.body,
-        crlfDelay: Infinity,
-      });
-
-      reporter.info(`Creating nodes from bulk operation ${op.name}`);
-
-      const objects: BulkResults = [];
-
-      for await (const line of rl) {
-        objects.push(JSON.parse(line));
-      }
-
-      await Promise.all(
-        op
-          .process(objects, nodeBuilder(gatsbyApi, options), gatsbyApi)
-          .map(async (promise) => {
-            const node = await promise;
-            actions.createNode(node);
-          })
-      );
-
-      operationTimer.end();
-
-      await cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
-    } catch (e) {
-      if (e instanceof OperationError) {
-        const code = errorCodes.bulkOperationFailed;
-
-        if (e.node.status === `CANCELED`) {
-          // A prod build canceled me, wait and try again
-          operationTimer.setStatus(
-            "This operation has been canceled by a higher priority build. It will retry shortly."
-          );
-          operationTimer.end();
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          await sourceFromOperation(op);
-        }
-
-        if (e.node.errorCode === `ACCESS_DENIED`) {
-          reporter.panic({
-            id: code,
-            context: {
-              sourceMessage: `Your credentials don't have access to a resource you requested`,
-            },
-            error: e,
-          });
-        }
-
-        reporter.panic({
-          id: errorCodes.unknownSourcingFailure,
-          context: {
-            sourceMessage: `Could not source from bulk operation: ${e.node.errorCode}`,
-          },
-          error: e,
-        });
-      }
-
-      reporter.panic({
-        id: errorCodes.unknownSourcingFailure,
-        context: {
-          sourceMessage: `Could not source from bulk operation`,
-        },
-        error: e,
-      });
-    }
-  };
 }
 
 async function sourceAllNodes(
