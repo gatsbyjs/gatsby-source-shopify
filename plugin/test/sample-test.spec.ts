@@ -1,6 +1,7 @@
 import { graphql } from "msw";
-import { SourceNodesArgs } from "gatsby";
 import { setupServer } from "msw/node";
+import { SourceNodesArgs } from "gatsby";
+
 import { createOperations } from "../src/operations";
 
 const server = setupServer(

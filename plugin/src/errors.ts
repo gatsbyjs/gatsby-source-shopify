@@ -1,3 +1,8 @@
+export const pluginErrorCodes = {
+  bulkOperationFailed: "111000",
+  unknownSourcingFailure: "111001",
+};
+
 export class OperationError extends Error {
   public node: BulkOperationNode;
 

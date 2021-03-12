@@ -42,22 +42,6 @@ export interface ShopifyBulkOperation {
   ) => Promise<NodeInput>[];
 }
 
-type BulkOperationStatus =
-  | "CANCELED"
-  | "CANCELING"
-  | "COMPLETED"
-  | "CREATED"
-  | "EXPIRED"
-  | "FAILED"
-  | "RUNNING";
-
-interface CurrentBulkOperationResponse {
-  currentBulkOperation: {
-    id: string;
-    status: BulkOperationStatus;
-  };
-}
-
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`, `EXPIRED`];
 
 function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {
@@ -108,6 +92,41 @@ export function createOperations(
       timer.end();
     }
   }
+
+  async function cancelOperation(id: string) {
+    return client.request<BulkOperationCancelResponse>(CANCEL_OPERATION, {
+      id,
+    });
+  }
+
+  async function cancelOperationInProgress(): Promise<void> {
+    let { currentBulkOperation: bulkOperation } = await currentOperation();
+    if (!bulkOperation) {
+      return;
+    }
+
+    if (bulkOperation.status === `RUNNING`) {
+      reporter.info(
+        `Canceling a currently running operation: ${bulkOperation.id}`
+      );
+      bulkOperation = (await cancelOperation(bulkOperation.id)).bulkOperation;
+      while (bulkOperation.status !== `CANCELED`) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        bulkOperation = (await currentOperation()).currentBulkOperation;
+      }
+    } else {
+      /**
+       * Just because it's not running doesn't mean it's done. For
+       * example, it could be CANCELING. We still have to wait for it
+       * to be officially finished before we start a new one.
+       */
+      while (!finishedStatuses.includes(bulkOperation.status)) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        bulkOperation = (await currentOperation()).currentBulkOperation;
+      }
+    }
+  }
+
   /* Maybe the interval should be adjustable, because users
    * with larger data sets could easily wait longer. We could
    * perhaps detect that the interval being used is too small
@@ -127,16 +146,16 @@ export function createOperations(
 
     if (options.verboseLogging) {
       reporter.verbose(`
-      Waiting for operation to complete
+        Waiting for operation to complete
 
-      ${operationId}
+        ${operationId}
 
-      Status: ${operation.node.status}
+        Status: ${operation.node.status}
 
-      Object count: ${operation.node.objectCount}
+        Object count: ${operation.node.objectCount}
 
-      Url: ${operation.node.url}
-    `);
+        Url: ${operation.node.url}
+      `);
     }
 
     if (operation.node.status === "FAILED") {
@@ -188,12 +207,8 @@ export function createOperations(
       collectionsProcessor
     ),
 
-    cancelOperation(id: string) {
-      return client.request<BulkOperationCancelResponse>(CANCEL_OPERATION, {
-        id,
-      });
-    },
-
+    cancelOperationInProgress,
+    cancelOperation,
     finishLastOperation,
     completedOperation,
   };
