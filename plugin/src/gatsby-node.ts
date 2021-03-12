@@ -37,19 +37,29 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
 function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
   completedOperation: (id: string) => Promise<{ node: BulkOperationNode }>,
+  cancelOperationInProgress: () => Promise<void>,
   gatsbyApi: SourceNodesArgs,
   options: ShopifyPluginOptions
 ) {
-  return async function sourceFromOperation(op: ShopifyBulkOperation) {
+  return async function sourceFromOperation(
+    op: ShopifyBulkOperation
+  ): Promise<void> {
     const { reporter, actions, cache } = gatsbyApi;
 
-    try {
-      const operationTimer = reporter.activityTimer(
-        `Source from bulk operation ${op.name}`
-      );
-      operationTimer.start();
+    const operationTimer = reporter.activityTimer(
+      `Source from bulk operation ${op.name}`
+    );
 
-      await finishLastOperation();
+    operationTimer.start();
+
+    try {
+      const isProd = process.env.IS_PRODUCTION_BRANCH === "true";
+
+      if (isProd) {
+        await cancelOperationInProgress();
+      } else {
+        await finishLastOperation();
+      }
 
       reporter.info(`Initiating bulk operation query ${op.name}`);
       const {
@@ -120,6 +130,16 @@ function makeSourceFromOperation(
       if (e instanceof OperationError) {
         const code = errorCodes.bulkOperationFailed;
 
+        if (e.node.status === `CANCELED`) {
+          // A prod build canceled me, wait and try again
+          operationTimer.setStatus(
+            "This operation has been canceled by a higher priority build. It will retry shortly."
+          );
+          operationTimer.end();
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await sourceFromOperation(op);
+        }
+
         if (e.node.errorCode === `ACCESS_DENIED`) {
           reporter.panic({
             id: code,
@@ -160,6 +180,7 @@ async function sourceAllNodes(
     createCollectionsOperation,
     finishLastOperation,
     completedOperation,
+    cancelOperationInProgress,
   } = createOperations(pluginOptions, gatsbyApi);
 
   const operations = [createProductsOperation];
@@ -174,6 +195,7 @@ async function sourceAllNodes(
   const sourceFromOperation = makeSourceFromOperation(
     finishLastOperation,
     completedOperation,
+    cancelOperationInProgress,
     gatsbyApi,
     pluginOptions
   );
@@ -206,6 +228,7 @@ async function sourceChangedNodes(
     incrementalCollections,
     finishLastOperation,
     completedOperation,
+    cancelOperationInProgress,
   } = createOperations(pluginOptions, gatsbyApi);
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
@@ -230,6 +253,7 @@ async function sourceChangedNodes(
   const sourceFromOperation = makeSourceFromOperation(
     finishLastOperation,
     completedOperation,
+    cancelOperationInProgress,
     gatsbyApi,
     pluginOptions
   );

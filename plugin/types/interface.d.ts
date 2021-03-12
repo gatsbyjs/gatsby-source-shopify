@@ -14,8 +14,17 @@ interface NodeBuilder {
 type BulkResult = Record<string, any>;
 type BulkResults = BulkResult[];
 
+type BulkOperationStatus =
+  | "CANCELED"
+  | "CANCELING"
+  | "COMPLETED"
+  | "CREATED"
+  | "EXPIRED"
+  | "FAILED"
+  | "RUNNING";
+
 interface BulkOperationNode {
-  status: string;
+  status: BulkOperationStatus;
   /**
    * FIXME: The docs say objectCount is a number, but it's a string. Let's
    * follow up with Shopify on this and make sure it's working as intended.
