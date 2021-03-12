@@ -28,6 +28,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
+    typeName: Joi.string().default(`Shopify`),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
@@ -299,48 +300,50 @@ export async function sourceNodes(
 
 export function createSchemaCustomization({
   actions,
-}: CreateSchemaCustomizationArgs) {
+}: CreateSchemaCustomizationArgs, {
+  typeName
+}:ShopifyPluginOptions) {
   actions.createTypes(`
-    type ShopifyProductVariant implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "id")
-      metafields: [ShopifyMetafield] @link(from: "id", by: "productVariantId")
+    type ${typeName}ProductVariant implements Node {
+      product: ${typeName}Product @link(from: "productId", by: "id")
+      metafields: [${typeName}Metafield] @link(from: "id", by: "productVariantId")
     }
 
-    type ShopifyProduct implements Node {
-      variants: [ShopifyProductVariant] @link(from: "id", by: "productId")
-      images: [ShopifyProductImage] @link(from: "id", by: "productId")
-      collections: [ShopifyCollection] @link(from: "id", by: "productIds")
+    type ${typeName}Product implements Node {
+      variants: [${typeName}ProductVariant] @link(from: "id", by: "productId")
+      images: [${typeName}ProductImage] @link(from: "id", by: "productId")
+      collections: [${typeName}Collection] @link(from: "id", by: "productIds")
     }
 
-    type ShopifyCollection implements Node {
-      products: [ShopifyProduct] @link(from: "productIds", by: "id")
+    type ${typeName}Collection implements Node {
+      products: [${typeName}Product] @link(from: "productIds", by: "id")
     }
 
-    type ShopifyProductFeaturedImage {
+    type ${typeName}ProductFeaturedImage {
       localFile: File @link
     }
 
-    type ShopifyCollectionImage {
+    type ${typeName}CollectionImage {
       localFile: File @link
     }
 
-    type ShopifyMetafield implements Node {
-      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "id")
+    type ${typeName}Metafield implements Node {
+      productVariant: ${typeName}ProductVariant @link(from: "productVariantId", by: "id")
     }
 
-    type ShopifyOrder implements Node {
-      lineItems: [ShopifyLineItem] @link(from: "id", by: "orderId")
+    type ${typeName}Order implements Node {
+      lineItems: [${typeName}LineItem] @link(from: "id", by: "orderId")
     }
 
-    type ShopifyLineItem implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "id")
-      order: ShopifyOrder @link(from: "orderId", by: "id")
+    type ${typeName}LineItem implements Node {
+      product: ${typeName}Product @link(from: "productId", by: "id")
+      order: ${typeName}Order @link(from: "orderId", by: "id")
     }
 
-    type ShopifyProductImage implements Node {
+    type ${typeName}ProductImage implements Node {
       altText: String
       originalSrc: String!
-      product: ShopifyProduct @link(from: "productId", by: "id")
+      product: ${typeName}Product @link(from: "productId", by: "id")
       localFile: File @link
     }
   `);
@@ -348,19 +351,19 @@ export function createSchemaCustomization({
 
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages }: ShopifyPluginOptions
+  { downloadImages, typeName }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
     const resolvers = {
-      ShopifyProductImage: {
+      [`${typeName}ProductImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      ShopifyProductFeaturedImage: {
+      [`${typeName}ProductFeaturedImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      ShopifyCollectionImage: {
+      [`${typeName}CollectionImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
     };
