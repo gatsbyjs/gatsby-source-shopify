@@ -108,7 +108,11 @@ export function createOperations(
 
   async function cancelOperationInProgress(): Promise<void> {
     let { currentBulkOperation: bulkOperation } = await currentOperation();
-    if (bulkOperation && bulkOperation.status === `RUNNING`) {
+    if (!bulkOperation) {
+      return;
+    }
+
+    if (bulkOperation.status === `RUNNING`) {
       bulkOperation = (await cancelOperation(bulkOperation.id)).bulkOperation;
       while (bulkOperation.status !== `CANCELED`) {
         await new Promise((resolve) => setTimeout(resolve, 100));
