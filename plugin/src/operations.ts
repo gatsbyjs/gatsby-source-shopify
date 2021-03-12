@@ -106,6 +106,9 @@ export function createOperations(
     }
 
     if (bulkOperation.status === `RUNNING`) {
+      reporter.info(
+        `Canceling a currently running operation: ${bulkOperation.id}`
+      );
       bulkOperation = (await cancelOperation(bulkOperation.id)).bulkOperation;
       while (bulkOperation.status !== `CANCELED`) {
         await new Promise((resolve) => setTimeout(resolve, 100));
