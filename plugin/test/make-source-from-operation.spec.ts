@@ -159,7 +159,7 @@ describe("A production build", () => {
       options
     );
 
-    await sourceFromOperation(operations.createProductsOperation);
+    await sourceFromOperation(operations.createProductsOperation, true);
 
     expect(createNode).toHaveBeenCalledWith(
       expect.objectContaining({ shopifyId: bulkResult.id })
