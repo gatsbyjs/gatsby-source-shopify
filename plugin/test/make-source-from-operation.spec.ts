@@ -11,6 +11,9 @@ import { pluginErrorCodes } from "../src/errors";
 
 const server = setupServer();
 
+// @ts-ignore
+global.setTimeout = (fn: Function) => fn();
+
 beforeAll(() => {
   server.listen();
 });
@@ -140,6 +143,7 @@ describe("When an operation gets canceled", () => {
     );
 
     await sourceFromOperation(operations.createProductsOperation);
+
     expect(createNode).toHaveBeenCalledWith(
       expect.objectContaining({ shopifyId: bulkResult.id })
     );
