@@ -316,7 +316,7 @@ const productsQuery = (dateString?: string) => {
                       }
                     }
                   }
-                  media {
+                  image {
                     id
                     altText
                     height
