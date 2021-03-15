@@ -248,6 +248,10 @@ export function createResolvers(
       ShopifyCollectionImage: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
+
+      ShopifyProductVariantImage: {
+        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+      },
     };
 
     createResolvers(resolvers);
