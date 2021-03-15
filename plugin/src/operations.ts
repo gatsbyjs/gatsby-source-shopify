@@ -45,6 +45,7 @@ export interface ShopifyBulkOperation {
 }
 
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`, `EXPIRED`];
+const failedStatuses = [`FAILED`, `CANCELED`];
 
 function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {
   return objects.map(builder.buildNode);
@@ -165,7 +166,7 @@ export function createOperations(
       `);
     }
 
-    if (operation.node.status === "FAILED") {
+    if (failedStatuses.includes(operation.node.status)) {
       throw new OperationError(operation.node);
     }
 
