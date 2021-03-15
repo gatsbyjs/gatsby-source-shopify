@@ -28,8 +28,10 @@ export interface BulkOperationRunQueryResponse {
 }
 
 export interface BulkOperationCancelResponse {
-  bulkOperation: BulkOperationNode;
-  userErrors: UserError[];
+  bulkOperationCancel: {
+    bulkOperation: BulkOperationNode;
+    userErrors: UserError[];
+  };
 }
 
 export interface ShopifyBulkOperation {
@@ -107,12 +109,17 @@ export function createOperations(
 
     if (bulkOperation.status === `RUNNING`) {
       reporter.info(
-        `Canceling a currently running operation: ${bulkOperation.id}`
+        `Canceling a currently running operation: ${bulkOperation.id}, this could take a few moments`
       );
-      bulkOperation = (await cancelOperation(bulkOperation.id)).bulkOperation;
+
+      const { bulkOperationCancel } = await cancelOperation(bulkOperation.id);
+
+      bulkOperation = bulkOperationCancel.bulkOperation;
+
       while (bulkOperation.status !== `CANCELED`) {
         await new Promise((resolve) => setTimeout(resolve, 100));
-        bulkOperation = (await currentOperation()).currentBulkOperation;
+        const currentOp = await currentOperation();
+        bulkOperation = currentOp.currentBulkOperation;
       }
     } else {
       /**

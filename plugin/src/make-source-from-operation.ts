@@ -41,13 +41,19 @@ export function makeSourceFromOperation(
 
       if (userErrors.length) {
         reporter.panic(
-          userErrors.map((e) => ({
-            id: errorCodes.bulkOperationFailed,
-            context: {
-              sourceMessage: `Couldn't initiate bulk operation query`,
-            },
-            error: new Error(`${e.field.join(".")}: ${e.message}`),
-          }))
+          userErrors.map((e) => {
+            const msg = e.field
+              ? `${e.field.join(".")}: ${e.message}`
+              : e.message;
+
+            return {
+              id: errorCodes.bulkOperationFailed,
+              context: {
+                sourceMessage: `Couldn't initiate bulk operation query`,
+              },
+              error: new Error(msg),
+            };
+          })
         );
       }
 
