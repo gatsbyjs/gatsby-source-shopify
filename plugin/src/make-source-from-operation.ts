@@ -15,7 +15,8 @@ export function makeSourceFromOperation(
   options: ShopifyPluginOptions
 ) {
   return async function sourceFromOperation(
-    op: ShopifyBulkOperation
+    op: ShopifyBulkOperation,
+    isPriorityBuild = process.env.IS_PRODUCTION_BRANCH === `true`
   ): Promise<void> {
     const { reporter, actions, cache } = gatsbyApi;
 
@@ -26,9 +27,7 @@ export function makeSourceFromOperation(
     operationTimer.start();
 
     try {
-      const isProd = process.env.IS_PRODUCTION_BRANCH === "true";
-
-      if (isProd) {
+      if (isPriorityBuild) {
         await cancelOperationInProgress();
       } else {
         await finishLastOperation();
