@@ -75,7 +75,7 @@ async function processChildImage(
   }
 }
 
-const processorMap: ProcessorMap = {
+export const processorMap: ProcessorMap = {
   LineItem: async (node, gatsbyApi) => {
     const lineItem = node;
     if (lineItem.product) {
