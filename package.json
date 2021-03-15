@@ -1,5 +1,5 @@
 {
-  "name": "gatsby-source-shopify-experimental",
+  "name": "gatsby-source-shopify-workspace",
   "private": "true",
   "workspaces": [
     "./plugin",
