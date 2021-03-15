@@ -316,6 +316,14 @@ const productsQuery = (dateString?: string) => {
                       }
                     }
                   }
+                  media {
+                    id
+                    altText
+                    height
+                    width
+                    originalSrc
+                    transformedSrc
+                  }
                 }
               }
             }

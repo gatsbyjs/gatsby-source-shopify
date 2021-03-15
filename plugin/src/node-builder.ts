@@ -105,6 +105,9 @@ const processorMap: ProcessorMap = {
   Product: async (node, gatsbyApi, options) => {
     return processChildImage(node, "featuredImage", gatsbyApi, options);
   },
+  ProductVariant: async (node, gatsbyApi, options) => {
+    return processChildImage(node, "media", gatsbyApi, options);
+  },
 };
 
 export function nodeBuilder(
