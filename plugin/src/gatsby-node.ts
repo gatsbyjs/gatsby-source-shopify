@@ -71,6 +71,7 @@ const shopifyNodeTypes = [
   `ShopifyCollectionImage`,
   `ShopifyProductFeaturedImage`,
   `ShopifyProductVariant`,
+  `ShopifyProductVariantImage`,
   `ShopifyProductVariantPricePair`,
 ];
 
@@ -184,6 +185,10 @@ export function createSchemaCustomization({
     type ShopifyProductVariant implements Node {
       product: ShopifyProduct @link(from: "productId", by: "id")
       metafields: [ShopifyMetafield] @link(from: "id", by: "productVariantId")
+    }
+
+    type ShopifyProductVariantImage {
+      localFile: File @link
     }
 
     type ShopifyProduct implements Node {
