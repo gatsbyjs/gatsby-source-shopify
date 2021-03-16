@@ -44,7 +44,7 @@ interface CurrentBulkOperationResponse {
 }
 
 interface UserError {
-  field: string[];
+  field?: string[];
   message: string;
 }
 
