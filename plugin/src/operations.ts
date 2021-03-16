@@ -15,25 +15,6 @@ import {
   incrementalCollectionsQuery,
 } from "./queries";
 
-interface UserError {
-  field: string[];
-  message: string;
-}
-
-export interface BulkOperationRunQueryResponse {
-  bulkOperationRunQuery: {
-    userErrors: UserError[];
-    bulkOperation: BulkOperationNode;
-  };
-}
-
-export interface BulkOperationCancelResponse {
-  bulkOperationCancel: {
-    bulkOperation: BulkOperationNode;
-    userErrors: UserError[];
-  };
-}
-
 export interface ShopifyBulkOperation {
   execute: () => Promise<BulkOperationRunQueryResponse>;
   name: string;

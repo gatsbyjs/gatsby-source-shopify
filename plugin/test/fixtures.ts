@@ -1,4 +1,4 @@
-import { GraphQLContext, GraphQLRequest, ResponseResolver } from "msw";
+import { GraphQLContext, GraphQLRequest, ResponseResolver, graphql } from "msw";
 
 type Resolver<T> = ResponseResolver<
   GraphQLRequest<Record<string, any>>,
@@ -26,3 +26,19 @@ export function currentBulkOperation(status: BulkOperationStatus) {
     },
   };
 }
+
+export const startOperation = graphql.mutation<BulkOperationRunQueryResponse>(
+  "INITIATE_BULK_OPERATION",
+  resolve({
+    bulkOperationRunQuery: {
+      bulkOperation: {
+        id: "",
+        objectCount: "0",
+        query: "",
+        status: "CREATED",
+        url: "",
+      },
+      userErrors: [],
+    },
+  })
+);

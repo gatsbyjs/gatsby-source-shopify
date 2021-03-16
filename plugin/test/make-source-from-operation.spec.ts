@@ -3,14 +3,15 @@ import { setupServer } from "msw/node";
 import { SourceNodesArgs } from "gatsby";
 
 import { makeSourceFromOperation } from "../src/make-source-from-operation";
-import {
-  BulkOperationCancelResponse,
-  BulkOperationRunQueryResponse,
-  createOperations,
-} from "../src/operations";
+import { createOperations } from "../src/operations";
 import { pluginErrorCodes } from "../src/errors";
 
-import { resolve, resolveOnce, currentBulkOperation } from "./fixtures";
+import {
+  resolve,
+  resolveOnce,
+  currentBulkOperation,
+  startOperation,
+} from "./fixtures";
 
 const server = setupServer();
 
@@ -57,21 +58,7 @@ describe("A production build", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("CANCELED"))
       ),
-      graphql.mutation<BulkOperationRunQueryResponse>(
-        "INITIATE_BULK_OPERATION",
-        resolve({
-          bulkOperationRunQuery: {
-            bulkOperation: {
-              id: "",
-              objectCount: "0",
-              query: "",
-              status: "CREATED",
-              url: "",
-            },
-            userErrors: [],
-          },
-        })
-      ),
+      startOperation,
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({
@@ -148,21 +135,7 @@ describe("When an operation gets canceled", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("COMPLETED"))
       ),
-      graphql.mutation<BulkOperationRunQueryResponse>(
-        "INITIATE_BULK_OPERATION",
-        resolve({
-          bulkOperationRunQuery: {
-            bulkOperation: {
-              id: "",
-              objectCount: "0",
-              query: "",
-              status: "CREATED",
-              url: "",
-            },
-            userErrors: [],
-          },
-        })
-      ),
+      startOperation,
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolveOnce({
@@ -249,21 +222,7 @@ describe("When an operation fails with bad credentials", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("COMPLETED"))
       ),
-      graphql.mutation<BulkOperationRunQueryResponse>(
-        "INITIATE_BULK_OPERATION",
-        resolve({
-          bulkOperationRunQuery: {
-            bulkOperation: {
-              id: "",
-              objectCount: "0",
-              query: "",
-              status: "CREATED",
-              url: "",
-            },
-            userErrors: [],
-          },
-        })
-      ),
+      startOperation,
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({
