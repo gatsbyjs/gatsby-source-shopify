@@ -130,7 +130,7 @@ export function nodeBuilder(
         shopifyId: result.id,
         id: gatsbyApi.createNodeId(result.id),
         internal: {
-          type: `${options.typeName}${remoteType}`,
+          type: `${options.typeName}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };
