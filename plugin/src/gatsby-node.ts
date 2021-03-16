@@ -92,6 +92,7 @@ async function sourceChangedNodes(
       `gatsby-source-shopify-experimental`
     ]?.lastBuildTime
   );
+  
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
       .getNodesByType(nodeType)
@@ -150,23 +151,30 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const lastOperationId = await gatsbyApi.cache.get(
-    LAST_SHOPIFY_BULK_OPERATION
-  );
+  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typeName;
+  const lastOperationId = await gatsbyApi.cache.get(cacheKey);
 
   if (lastOperationId) {
     gatsbyApi.reporter.info(`Cancelling last operation: ${lastOperationId}`);
     await createOperations(pluginOptions, gatsbyApi).cancelOperation(
       lastOperationId
     );
-    await gatsbyApi.cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
+    await gatsbyApi.cache.set(cacheKey, undefined);
   }
 
   const lastBuildTime = gatsbyApi.store.getState().status.plugins?.[
     `gatsby-source-shopify-experimental`
   ]?.lastBuildTime;
 
-  if (lastBuildTime) {
+  const hasBuiltFor = gatsbyApi.store.getState().status.plugins?.[
+    `gatsby-source-shopify-experimental`
+  ]?.hasBuiltFor; 
+
+  if (
+    lastBuildTime !== undefined && 
+    hasBuiltFor !== undefined && 
+    hasBuiltFor.includes(pluginOptions.typeName)
+  ) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
     await sourceChangedNodes(gatsbyApi, pluginOptions);
   } else {
@@ -175,14 +183,20 @@ export async function sourceNodes(
   }
 
   gatsbyApi.reporter.info(`Finished sourcing nodes, caching last build time`);
-  gatsbyApi.actions.setPluginStatus({ lastBuildTime: Date.now() });
+  gatsbyApi.actions.setPluginStatus({ 
+    lastBuildTime: Date.now(), 
+    hasBuiltFor: hasBuiltFor === undefined 
+      ? [pluginOptions.typeName] 
+      : [...hasBuiltFor, pluginOptions.typeName
+    ]
+  });
 }
 
 export function createSchemaCustomization({
   actions,
 }: CreateSchemaCustomizationArgs, {
   typeName
-}:ShopifyPluginOptions) {
+}: ShopifyPluginOptions) {
   actions.createTypes(`
     type ${typeName}ShopifyProductVariant implements Node {
       product: ${typeName}ShopifyProduct @link(from: "productId", by: "id")
