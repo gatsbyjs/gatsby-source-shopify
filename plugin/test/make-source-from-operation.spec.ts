@@ -1,4 +1,10 @@
-import { graphql, rest } from "msw";
+import {
+  graphql,
+  GraphQLContext,
+  GraphQLRequest,
+  ResponseResolver,
+  rest,
+} from "msw";
 import { setupServer } from "msw/node";
 import { SourceNodesArgs } from "gatsby";
 
@@ -11,6 +17,36 @@ import {
 import { pluginErrorCodes } from "../src/errors";
 
 const server = setupServer();
+
+type Resolver<T> = ResponseResolver<
+  GraphQLRequest<Record<string, any>>,
+  GraphQLContext<T>,
+  any
+>;
+
+function once<T>(data: T): Resolver<T> {
+  return (_req, res, ctx) => {
+    return res.once(ctx.data(data));
+  };
+}
+
+function resolve<T>(data: T): Resolver<T> {
+  return (_req, res, ctx) => {
+    return res(ctx.data(data));
+  };
+}
+
+function resolveCurrentOperationWithStatus(status: BulkOperationStatus) {
+  return graphql.query<CurrentBulkOperationResponse>(
+    "OPERATION_STATUS",
+    resolve({
+      currentBulkOperation: {
+        id: ``,
+        status,
+      },
+    })
+  );
+}
 
 // @ts-ignore
 global.setTimeout = (fn: Function) => fn();
@@ -34,83 +70,55 @@ describe("A production build", () => {
     server.use(
       graphql.query<CurrentBulkOperationResponse>(
         "OPERATION_STATUS",
-        (_req, res, ctx) => {
-          return res.once(
-            ctx.data({
-              currentBulkOperation: {
-                id: ``,
-                status: `RUNNING`,
-              },
-            })
-          );
-        }
+        once({
+          currentBulkOperation: {
+            id: ``,
+            status: `RUNNING`,
+          },
+        })
       ),
       graphql.mutation<BulkOperationCancelResponse>(
         "CANCEL_OPERATION",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              bulkOperationCancel: {
-                bulkOperation: {
-                  id: "",
-                  status: "CANCELING",
-                  objectCount: "0",
-                  url: "",
-                  query: "",
-                },
-                userErrors: [],
-              },
-            })
-          );
-        }
+        resolve({
+          bulkOperationCancel: {
+            bulkOperation: {
+              id: "",
+              status: "CANCELING",
+              objectCount: "0",
+              url: "",
+              query: "",
+            },
+            userErrors: [],
+          },
+        })
       ),
-      graphql.query<CurrentBulkOperationResponse>(
-        "OPERATION_STATUS",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              currentBulkOperation: {
-                id: ``,
-                status: `CANCELED`,
-              },
-            })
-          );
-        }
-      ),
+      resolveCurrentOperationWithStatus("CANCELED"),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              bulkOperationRunQuery: {
-                bulkOperation: {
-                  id: "",
-                  objectCount: "0",
-                  query: "",
-                  status: "CREATED",
-                  url: "",
-                },
-                userErrors: [],
-              },
-            })
-          );
-        }
+        resolve({
+          bulkOperationRunQuery: {
+            bulkOperation: {
+              id: "",
+              objectCount: "0",
+              query: "",
+              status: "CREATED",
+              url: "",
+            },
+            userErrors: [],
+          },
+        })
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              node: {
-                status: `COMPLETED`,
-                id: "",
-                objectCount: "1",
-                query: "",
-                url: "http://results.url",
-              },
-            })
-          );
-        }
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "",
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
       ),
       rest.get("http://results.url", (_req, res, ctx) => {
         return res(ctx.text(JSON.stringify(bulkResult)));
@@ -172,69 +180,45 @@ describe("When an operation gets canceled", () => {
 
   beforeEach(() => {
     server.use(
-      graphql.query<CurrentBulkOperationResponse>(
-        "OPERATION_STATUS",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              currentBulkOperation: {
-                id: ``,
-                status: `COMPLETED`,
-              },
-            })
-          );
-        }
-      ),
+      resolveCurrentOperationWithStatus("COMPLETED"),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              bulkOperationRunQuery: {
-                bulkOperation: {
-                  id: "",
-                  objectCount: "0",
-                  query: "",
-                  status: "CREATED",
-                  url: "",
-                },
-                userErrors: [],
-              },
-            })
-          );
-        }
+        resolve({
+          bulkOperationRunQuery: {
+            bulkOperation: {
+              id: "",
+              objectCount: "0",
+              query: "",
+              status: "CREATED",
+              url: "",
+            },
+            userErrors: [],
+          },
+        })
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
-        (_req, res, ctx) => {
-          return res.once(
-            ctx.data({
-              node: {
-                status: `CANCELED`,
-                id: "",
-                objectCount: "0",
-                query: "",
-                url: "",
-              },
-            })
-          );
-        }
+        once({
+          node: {
+            status: `CANCELED`,
+            id: "",
+            objectCount: "0",
+            query: "",
+            url: "",
+          },
+        })
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              node: {
-                status: `COMPLETED`,
-                id: "",
-                objectCount: "1",
-                query: "",
-                url: "http://results.url",
-              },
-            })
-          );
-        }
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "",
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
       ),
       rest.get("http://results.url", (_req, res, ctx) => {
         return res(ctx.text(JSON.stringify(bulkResult)));
@@ -294,54 +278,34 @@ describe("When an operation gets canceled", () => {
 describe("When an operation fails with bad credentials", () => {
   beforeEach(() => {
     server.use(
-      graphql.query<CurrentBulkOperationResponse>(
-        "OPERATION_STATUS",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              currentBulkOperation: {
-                id: ``,
-                status: `COMPLETED`,
-              },
-            })
-          );
-        }
-      ),
+      resolveCurrentOperationWithStatus("COMPLETED"),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              bulkOperationRunQuery: {
-                bulkOperation: {
-                  id: "",
-                  objectCount: "0",
-                  query: "",
-                  status: "CREATED",
-                  url: "",
-                },
-                userErrors: [],
-              },
-            })
-          );
-        }
+        resolve({
+          bulkOperationRunQuery: {
+            bulkOperation: {
+              id: "",
+              objectCount: "0",
+              query: "",
+              status: "CREATED",
+              url: "",
+            },
+            userErrors: [],
+          },
+        })
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
-        (_req, res, ctx) => {
-          return res(
-            ctx.data({
-              node: {
-                status: `FAILED`,
-                id: "",
-                objectCount: "0",
-                query: "",
-                url: "",
-                errorCode: `ACCESS_DENIED`,
-              },
-            })
-          );
-        }
+        resolve({
+          node: {
+            status: `FAILED`,
+            id: "",
+            objectCount: "0",
+            query: "",
+            url: "",
+            errorCode: `ACCESS_DENIED`,
+          },
+        })
       )
     );
   });
