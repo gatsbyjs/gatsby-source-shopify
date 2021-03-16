@@ -106,7 +106,7 @@ The plugin's default behavior is to fall back to Shopify's CDN.
 
 `typeName: string`
 
-Not set by default. If set to a string (example `MyStore`) node names will be `allMyStoreProducts` instead of `allShopifyProducts`.
+Not set by default. If set to a string (example `MyStore`) node names will be `allMyStoreShopifyProducts` instead of `allShopifyProducts`.
 
 ## Images
 
