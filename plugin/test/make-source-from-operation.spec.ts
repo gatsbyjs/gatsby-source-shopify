@@ -1,10 +1,4 @@
-import {
-  graphql,
-  GraphQLContext,
-  GraphQLRequest,
-  ResponseResolver,
-  rest,
-} from "msw";
+import { graphql, rest } from "msw";
 import { setupServer } from "msw/node";
 import { SourceNodesArgs } from "gatsby";
 
@@ -16,37 +10,9 @@ import {
 } from "../src/operations";
 import { pluginErrorCodes } from "../src/errors";
 
+import { resolve, resolveOnce, currentBulkOperation } from "./fixtures";
+
 const server = setupServer();
-
-type Resolver<T> = ResponseResolver<
-  GraphQLRequest<Record<string, any>>,
-  GraphQLContext<T>,
-  any
->;
-
-function once<T>(data: T): Resolver<T> {
-  return (_req, res, ctx) => {
-    return res.once(ctx.data(data));
-  };
-}
-
-function resolve<T>(data: T): Resolver<T> {
-  return (_req, res, ctx) => {
-    return res(ctx.data(data));
-  };
-}
-
-function resolveCurrentOperationWithStatus(status: BulkOperationStatus) {
-  return graphql.query<CurrentBulkOperationResponse>(
-    "OPERATION_STATUS",
-    resolve({
-      currentBulkOperation: {
-        id: ``,
-        status,
-      },
-    })
-  );
-}
 
 // @ts-ignore
 global.setTimeout = (fn: Function) => fn();
@@ -70,12 +36,7 @@ describe("A production build", () => {
     server.use(
       graphql.query<CurrentBulkOperationResponse>(
         "OPERATION_STATUS",
-        once({
-          currentBulkOperation: {
-            id: ``,
-            status: `RUNNING`,
-          },
-        })
+        resolveOnce(currentBulkOperation("RUNNING"))
       ),
       graphql.mutation<BulkOperationCancelResponse>(
         "CANCEL_OPERATION",
@@ -92,7 +53,10 @@ describe("A production build", () => {
           },
         })
       ),
-      resolveCurrentOperationWithStatus("CANCELED"),
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolve(currentBulkOperation("CANCELED"))
+      ),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
         resolve({
@@ -180,7 +144,10 @@ describe("When an operation gets canceled", () => {
 
   beforeEach(() => {
     server.use(
-      resolveCurrentOperationWithStatus("COMPLETED"),
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolve(currentBulkOperation("COMPLETED"))
+      ),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
         resolve({
@@ -198,7 +165,7 @@ describe("When an operation gets canceled", () => {
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
-        once({
+        resolveOnce({
           node: {
             status: `CANCELED`,
             id: "",
@@ -278,7 +245,10 @@ describe("When an operation gets canceled", () => {
 describe("When an operation fails with bad credentials", () => {
   beforeEach(() => {
     server.use(
-      resolveCurrentOperationWithStatus("COMPLETED"),
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolve(currentBulkOperation("COMPLETED"))
+      ),
       graphql.mutation<BulkOperationRunQueryResponse>(
         "INITIATE_BULK_OPERATION",
         resolve({
