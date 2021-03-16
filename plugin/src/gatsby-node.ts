@@ -187,8 +187,7 @@ export async function sourceNodes(
     lastBuildTime: Date.now(), 
     hasBuiltFor: hasBuiltFor === undefined 
       ? [pluginOptions.typeName] 
-      : [...hasBuiltFor, pluginOptions.typeName
-    ]
+      : [...hasBuiltFor, pluginOptions.typeName]
   });
 }
 
