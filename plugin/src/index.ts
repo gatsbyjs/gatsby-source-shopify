@@ -1,1 +1,1 @@
-// no-op
+export { getShopifyImage } from "./get-shopify-image";
