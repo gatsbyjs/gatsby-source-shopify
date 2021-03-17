@@ -132,6 +132,18 @@ const collectionsQuery = (dateString?: string) => `
         templateSuffix
         title
         updatedAt
+        metafields {
+          edges {
+            node {
+              description
+              id
+              key
+              namespace
+              value
+              valueType
+            }
+          }
+        }
       }
     }
   }

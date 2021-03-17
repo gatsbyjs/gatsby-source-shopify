@@ -194,6 +194,7 @@ export function createSchemaCustomization({
 
     type ShopifyCollection implements Node {
       products: [ShopifyProduct] @link(from: "productIds", by: "id")
+      metafields: [ShopifyMetafield] @link(from: "id", by: "collectionId")
     }
 
     type ShopifyProductFeaturedImage {
@@ -202,10 +203,6 @@ export function createSchemaCustomization({
 
     type ShopifyCollectionImage {
       localFile: File @link
-    }
-
-    type ShopifyMetafield implements Node {
-      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "id")
     }
 
     type ShopifyOrder implements Node {
