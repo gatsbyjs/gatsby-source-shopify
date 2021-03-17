@@ -1,4 +1,4 @@
-import { getShopifyImage } from "..";
+import { getShopifyImage } from "../src/get-shopify-image";
 
 const image = {
   originalSrc:
