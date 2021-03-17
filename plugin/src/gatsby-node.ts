@@ -95,7 +95,7 @@ async function sourceChangedNodes(
   
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
-      .getNodesByType(nodeType)
+      .getNodesByType(`${pluginOptions.typeName}${nodeType}`)
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
