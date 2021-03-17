@@ -56,7 +56,7 @@ For the Private app name enter `Gatsby` (the name does not really matter). Add t
 
 **Note: Enabling Cart and Checkout features**
 
-If you are planning on managing your cart within Gatsby you will also need to check the box next to `Allow this app to access your storefront data using the Storefront API` and make sure to check `Read and modify checkouts`. This source plugin does not require Shopify Storefront API access to work, however, this is needed to add items to a Shopify checkout before passing the user to Shopify's managed checkout workflow. See [Gatsby Starter Shopify][https://github.com/gatsbyjs/gatsby-starter-shopify] for an example.
+If you are planning on managing your cart within Gatsby you will also need to check the box next to `Allow this app to access your storefront data using the Storefront API` and make sure to check `Read and modify checkouts`. This source plugin does not require Shopify Storefront API access to work, however, this is needed to add items to a Shopify checkout before passing the user to Shopify's managed checkout workflow. See [Gatsby Starter Shopify](https://github.com/gatsbyjs/gatsby-starter-shopify) for an example.
 
 Click the Save button and then click Create app to create your Private Shopify App. From there you can copy the API Key and Password from the Private app page and add them to your environment file for `SHOPIFY_ADMIN_API_KEY` and `SHOPIFY_ADMIN_PASSWORD` respectively.
 
@@ -159,7 +159,7 @@ import { getShopifyImage } from "gatsby-source-shopify-experimental";
 function CartImage(storefrontProduct) {
   // This is data from Storefront, not from Gatsby
   const image =  storefrontProduct.images.edges[0].node;
-  const imageData = gatsbyImageData({image, layout: "fixed", width: 200, height: 200})
+  const imageData = getShopifyImage({ image, layout: "fixed", width: 200, height: 200 })
 
   return (
     <GatsbyImage
