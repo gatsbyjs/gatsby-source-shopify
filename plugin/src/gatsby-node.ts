@@ -205,6 +205,11 @@ export function createSchemaCustomization({
       localFile: File @link
     }
 
+    type ShopifyMetafield implements Node {
+      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "id")
+      collection: ShopifyCollection @link(from: "collectionId", by: "id")
+    }
+
     type ShopifyOrder implements Node {
       lineItems: [ShopifyLineItem] @link(from: "id", by: "orderId")
     }
