@@ -41,7 +41,7 @@ interface ProcessorMap {
   [remoteType: string]: (
     node: NodeInput,
     gatsbyApi: SourceNodesArgs,
-    options: ShopifyPluginOptions
+    pluginOptions: ShopifyPluginOptions
   ) => Promise<void>;
 }
 
@@ -49,9 +49,9 @@ async function processChildImage(
   node: NodeInput,
   childKey: string,
   gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
+  pluginOptions: ShopifyPluginOptions
 ) {
-  if (options.downloadImages) {
+  if (pluginOptions.downloadImages) {
     const image = node[childKey] as
       | {
           id: string;
@@ -109,7 +109,7 @@ const processorMap: ProcessorMap = {
 
 export function nodeBuilder(
   gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
+  pluginOptions: ShopifyPluginOptions
 ): NodeBuilder {
   return {
     async buildNode(result: BulkResult) {
@@ -128,14 +128,14 @@ export function nodeBuilder(
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(result.id),
+        id: gatsbyApi.createNodeId(`${pluginOptions.typeName}_${result.id}`),
         internal: {
-          type: `${options.typeName}Shopify${remoteType}`,
+          type: `${pluginOptions.typeName}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };
 
-      await processor(node, gatsbyApi, options);
+      await processor(node, gatsbyApi, pluginOptions);
 
       return node;
     },
