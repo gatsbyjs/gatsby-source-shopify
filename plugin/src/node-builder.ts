@@ -5,9 +5,9 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
 function attachParentId(
-  pluginOptions: ShopifyPluginOptions, 
   obj: Record<string, any>, 
-  gatsbyApi: SourceNodesArgs
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions,
 ) {
   if (obj.__parentId) {
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
@@ -127,7 +127,7 @@ export function nodeBuilder(
 
       const processor = processorMap[remoteType] || (() => Promise.resolve());
 
-      attachParentId(pluginOptions, result, gatsbyApi);
+      attachParentId(result, gatsbyApi, pluginOptions);
 
       const node = {
         ...result,
