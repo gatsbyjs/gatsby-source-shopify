@@ -90,7 +90,7 @@ async function sourceChangedNodes(
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.lastBuildTime
+    ]?.[`lastBuildTimeFor${pluginOptions.typeName}`]
   );
   
   for (const nodeType of shopifyNodeTypes) {
@@ -162,19 +162,13 @@ export async function sourceNodes(
     await gatsbyApi.cache.set(cacheKey, undefined);
   }
 
-  const lastBuildTime = gatsbyApi.store.getState().status.plugins?.[
+  const pluginStatus = gatsbyApi.store.getState().status.plugins?.[
     `gatsby-source-shopify-experimental`
-  ]?.lastBuildTime;
+  ];
 
-  const hasBuiltFor = gatsbyApi.store.getState().status.plugins?.[
-    `gatsby-source-shopify-experimental`
-  ]?.hasBuiltFor; 
+  const lastBuildTime = pluginStatus?.[`lastBuildTimeFor${pluginOptions.typeName}`];
 
-  if (
-    lastBuildTime !== undefined && 
-    hasBuiltFor !== undefined && 
-    hasBuiltFor.includes(pluginOptions.typeName)
-  ) {
+  if (lastBuildTime !== undefined) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
     await sourceChangedNodes(gatsbyApi, pluginOptions);
   } else {
@@ -182,13 +176,17 @@ export async function sourceNodes(
     await sourceAllNodes(gatsbyApi, pluginOptions);
   }
 
-  gatsbyApi.reporter.info(`Finished sourcing nodes, caching last build time`);
-  gatsbyApi.actions.setPluginStatus({ 
-    lastBuildTime: Date.now(), 
-    hasBuiltFor: hasBuiltFor === undefined 
-      ? [pluginOptions.typeName] 
-      : [...hasBuiltFor, pluginOptions.typeName]
-  });
+  gatsbyApi.reporter.info(`Finished sourcing nodes, caching last build time`);  
+  gatsbyApi.actions.setPluginStatus(
+    pluginStatus !== undefined
+      ? {
+          ...pluginStatus,
+          [`lastBuildTimeFor${pluginOptions.typeName}`]: Date.now()
+        }
+      : {
+          [`lastBuildTimeFor${pluginOptions.typeName}`]: Date.now()
+        }  
+  );
 }
 
 export function createSchemaCustomization({
