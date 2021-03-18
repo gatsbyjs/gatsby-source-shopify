@@ -4,12 +4,16 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 // 'gid://shopify/Metafield/6936247730264'
 export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
-function attachParentId(obj: Record<string, any>, gatsbyApi: SourceNodesArgs) {
+function attachParentId(
+  pluginOptions: ShopifyPluginOptions, 
+  obj: Record<string, any>, 
+  gatsbyApi: SourceNodesArgs
+) {
   if (obj.__parentId) {
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(fullId);
+    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typeName}_${fullId}`);
     delete obj.__parentId;
   }
 }
@@ -123,7 +127,7 @@ export function nodeBuilder(
 
       const processor = processorMap[remoteType] || (() => Promise.resolve());
 
-      attachParentId(result, gatsbyApi);
+      attachParentId(pluginOptions, result, gatsbyApi);
 
       const node = {
         ...result,
