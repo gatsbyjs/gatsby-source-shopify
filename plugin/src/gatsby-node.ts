@@ -6,7 +6,7 @@ import {
   PluginOptionsSchemaArgs,
   SourceNodesArgs,
 } from "gatsby";
-import { getGatsbyImageResolver } from "gatsby-plugin-image/graphql-utils";
+import { getGatsbyImageResolver, IGatsbyGraphQLResolverArgumentConfig } from "gatsby-plugin-image/graphql-utils";
 import { resolveGatsbyImageData } from "./resolve-gatsby-image-data";
 import { pluginErrorCodes as errorCodes } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
@@ -201,6 +201,13 @@ export function createResolvers(
   { downloadImages, typePrefix = "" }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
+    const args = {
+      placeholder: {
+        description: "Low resolution version of the image",
+        type: "String",
+        defaultValue: null
+      } as IGatsbyGraphQLResolverArgumentConfig
+    }
     const imageNodeTypes = [
       `ShopifyProductImage`,
       `ShopifyProductFeaturedImage`,
@@ -212,7 +219,7 @@ export function createResolvers(
       (r, nodeType) => ({
         ...r,
         [`${typePrefix}${nodeType}`]: {
-          gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+          gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData, args),
         },
       }),
       {}
