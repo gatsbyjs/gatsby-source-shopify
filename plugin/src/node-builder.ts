@@ -13,7 +13,7 @@ function attachParentId(
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typeName}_${fullId}`);
+    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typePrefix}_${fullId}`);
     delete obj.__parentId;
   }
 }
@@ -119,7 +119,7 @@ export function nodeBuilder(
     async buildNode(result: BulkResult) {
       if (!pattern.test(result.id)) {
         throw new Error(
-          `Expected an ID in the format gid://shopify/<typename>/<id>`
+          `Expected an ID in the format gid://shopify/<typePrefix>/<id>`
         );
       }
 
@@ -132,9 +132,9 @@ export function nodeBuilder(
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(`${pluginOptions.typeName}_${result.id}`),
+        id: gatsbyApi.createNodeId(`${pluginOptions.typePrefix}_${result.id}`),
         internal: {
-          type: `${pluginOptions.typeName}Shopify${remoteType}`,
+          type: `${pluginOptions.typePrefix}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };

@@ -20,7 +20,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
-    typeName: Joi.string().default(''),
+    typePrefix: Joi.string().default(''),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
@@ -90,12 +90,12 @@ async function sourceChangedNodes(
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.[`lastBuildTimeFor${pluginOptions.typeName}`]
+    ]?.[`lastBuildTimeFor${pluginOptions.typePrefix}`]
   );
   
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
-      .getNodesByType(`${pluginOptions.typeName}${nodeType}`)
+      .getNodesByType(`${pluginOptions.typePrefix}${nodeType}`)
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
@@ -151,7 +151,7 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typeName;
+  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix;
   const lastOperationId = await gatsbyApi.cache.get(cacheKey);
 
   if (lastOperationId) {
@@ -166,7 +166,7 @@ export async function sourceNodes(
     `gatsby-source-shopify-experimental`
   ];
 
-  const lastBuildTime = pluginStatus?.[`lastBuildTimeFor${pluginOptions.typeName}`];
+  const lastBuildTime = pluginStatus?.[`lastBuildTimeFor${pluginOptions.typePrefix}`];
 
   if (lastBuildTime !== undefined) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
@@ -181,10 +181,10 @@ export async function sourceNodes(
     pluginStatus !== undefined
       ? {
           ...pluginStatus,
-          [`lastBuildTimeFor${pluginOptions.typeName}`]: Date.now()
+          [`lastBuildTimeFor${pluginOptions.typePrefix}`]: Date.now()
         }
       : {
-          [`lastBuildTimeFor${pluginOptions.typeName}`]: Date.now()
+          [`lastBuildTimeFor${pluginOptions.typePrefix}`]: Date.now()
         }  
   );
 }
@@ -192,49 +192,49 @@ export async function sourceNodes(
 export function createSchemaCustomization({
   actions,
 }: CreateSchemaCustomizationArgs, {
-  typeName
+  typePrefix
 }: ShopifyPluginOptions) {
   actions.createTypes(`
-    type ${typeName}ShopifyProductVariant implements Node {
-      product: ${typeName}ShopifyProduct @link(from: "productId", by: "id")
-      metafields: [${typeName}ShopifyMetafield] @link(from: "id", by: "productVariantId")
+    type ${typePrefix}ShopifyProductVariant implements Node {
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
+      metafields: [${typePrefix}ShopifyMetafield] @link(from: "id", by: "productVariantId")
     }
 
-    type ${typeName}ShopifyProduct implements Node {
-      variants: [${typeName}ShopifyProductVariant] @link(from: "id", by: "productId")
-      images: [${typeName}ShopifyProductImage] @link(from: "id", by: "productId")
-      collections: [${typeName}ShopifyCollection] @link(from: "id", by: "productIds")
+    type ${typePrefix}ShopifyProduct implements Node {
+      variants: [${typePrefix}ShopifyProductVariant] @link(from: "id", by: "productId")
+      images: [${typePrefix}ShopifyProductImage] @link(from: "id", by: "productId")
+      collections: [${typePrefix}ShopifyCollection] @link(from: "id", by: "productIds")
     }
 
-    type ${typeName}ShopifyCollection implements Node {
-      products: [${typeName}ShopifyProduct] @link(from: "productIds", by: "id")
+    type ${typePrefix}ShopifyCollection implements Node {
+      products: [${typePrefix}ShopifyProduct] @link(from: "productIds", by: "id")
     }
 
-    type ${typeName}ShopifyProductFeaturedImage {
+    type ${typePrefix}ShopifyProductFeaturedImage {
       localFile: File @link
     }
 
-    type ${typeName}ShopifyCollectionImage {
+    type ${typePrefix}ShopifyCollectionImage {
       localFile: File @link
     }
 
-    type ${typeName}ShopifyMetafield implements Node {
-      productVariant: ${typeName}ShopifyProductVariant @link(from: "productVariantId", by: "id")
+    type ${typePrefix}ShopifyMetafield implements Node {
+      productVariant: ${typePrefix}ShopifyProductVariant @link(from: "productVariantId", by: "id")
     }
 
-    type ${typeName}ShopifyOrder implements Node {
-      lineItems: [${typeName}ShopifyLineItem] @link(from: "id", by: "orderId")
+    type ${typePrefix}ShopifyOrder implements Node {
+      lineItems: [${typePrefix}ShopifyLineItem] @link(from: "id", by: "orderId")
     }
 
-    type ${typeName}ShopifyLineItem implements Node {
-      product: ${typeName}ShopifyProduct @link(from: "productId", by: "id")
-      order: ${typeName}ShopifyOrder @link(from: "orderId", by: "id")
+    type ${typePrefix}ShopifyLineItem implements Node {
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
+      order: ${typePrefix}ShopifyOrder @link(from: "orderId", by: "id")
     }
 
-    type ${typeName}ShopifyProductImage implements Node {
+    type ${typePrefix}ShopifyProductImage implements Node {
       altText: String
       originalSrc: String!
-      product: ${typeName}ShopifyProduct @link(from: "productId", by: "id")
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
       localFile: File @link
     }
   `);
@@ -242,19 +242,19 @@ export function createSchemaCustomization({
 
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages, typeName }: ShopifyPluginOptions
+  { downloadImages, typePrefix }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
     const resolvers = {
-      [`${typeName}ShopifyProductImage`]: {
+      [`${typePrefix}ShopifyProductImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      [`${typeName}ShopifyProductFeaturedImage`]: {
+      [`${typePrefix}ShopifyProductFeaturedImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      [`${typeName}ShopifyCollectionImage`]: {
+      [`${typePrefix}ShopifyCollectionImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
     };

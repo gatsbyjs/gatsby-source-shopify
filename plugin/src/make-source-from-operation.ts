@@ -19,7 +19,7 @@ export function makeSourceFromOperation(
     isPriorityBuild = process.env.IS_PRODUCTION_BRANCH === `true`
   ): Promise<void> {
     const { reporter, actions, cache } = gatsbyApi;
-    const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typeName;
+    const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix;
 
     const operationTimer = reporter.activityTimer(
       `Source from bulk operation ${op.name}`
