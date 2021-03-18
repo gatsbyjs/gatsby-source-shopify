@@ -119,7 +119,7 @@ export function nodeBuilder(
     async buildNode(result: BulkResult) {
       if (!pattern.test(result.id)) {
         throw new Error(
-          `Expected an ID in the format gid://shopify/<typePrefix>/<id>`
+          `Expected an ID in the format gid://shopify/<typename>/<id>`
         );
       }
 
