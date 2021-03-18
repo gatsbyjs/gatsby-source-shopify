@@ -17,7 +17,7 @@ This takes you through the minimal steps to see your Shopify data in your Gatsby
 Install this plugin to your Gatsby site.
 
 ```
-npm i gatsby-source-shopify-experimental
+npm i gatsby-source-shopify-experimental gatsby-plugin-image
 ```
 
 ### Configure
@@ -37,6 +37,7 @@ module.exports = {
         storeUrl: process.env.SHOPIFY_STORE_URL,
       },
     },
+    "gatsby-plugin-image"
   ],
 };
 ```
@@ -55,7 +56,7 @@ For the Private app name enter `Gatsby` (the name does not really matter). Add t
 
 **Note: Enabling Cart and Checkout features**
 
-If you are planning on managing your cart within Gatsby you will also need to check the box next to `Allow this app to access your storefront data using the Storefront API` and make sure to check `Read and modify checkouts`. This source plugin does not require Shopify Storefront API access to work, however, this is needed to add items to a Shopify checkout before passing the user to Shopify's managed checkout workflow. See [Gatsby Starter Shopify][https://github.com/gatsbyjs/gatsby-starter-shopify] for an example.
+If you are planning on managing your cart within Gatsby you will also need to check the box next to `Allow this app to access your storefront data using the Storefront API` and make sure to check `Read and modify checkouts`. This source plugin does not require Shopify Storefront API access to work, however, this is needed to add items to a Shopify checkout before passing the user to Shopify's managed checkout workflow. See [Gatsby Starter Shopify](https://github.com/gatsbyjs/gatsby-starter-shopify) for an example.
 
 Click the Save button and then click Create app to create your Private Shopify App. From there you can copy the API Key and Password from the Private app page and add them to your environment file for `SHOPIFY_ADMIN_API_KEY` and `SHOPIFY_ADMIN_PASSWORD` respectively.
 
@@ -136,7 +137,7 @@ products: allShopifyProduct(
 
 You could then display the image in your component like this:
 
-```js
+```jsx
 import { GatsbyImage } from "gatsby-plugin-image";
 
 function ProductListing(product) {
@@ -147,6 +148,31 @@ function ProductListing(product) {
     />
   );
 }
+```
+
+### Use runtime images
+
+If you get Shopify images at runtime that don't have the `gatsbyImageData` resolver, for example from the cart or Storefront API, you can use the `getShopifyImage` function to create an imagedata object to use with `<GatsbyImage>`.
+
+It expects an `image` object that contains the properties `width`, `height` and `originalSrc`, such as [a Storefront API `Image` object](https://shopify.dev/docs/storefront-api/reference/common-objects/image).
+
+```jsx
+import { GatsbyImage } from "gatsby-plugin-image";
+import { getShopifyImage } from "gatsby-source-shopify-experimental";
+
+function CartImage(storefrontProduct) {
+  // This is data from Storefront, not from Gatsby
+  const image =  storefrontProduct.images.edges[0].node;
+  const imageData = getShopifyImage({ image, layout: "fixed", width: 200, height: 200 })
+
+  return (
+    <GatsbyImage
+      image={imageData}
+      alt={image.altText}
+    />
+  );
+}
+
 ```
 
 ### Download up front
@@ -167,6 +193,7 @@ module.exports = {
         downloadImages: true,
       },
     },
+    "gatsby-plugin-image"
   ],
 };
 ```
@@ -185,9 +212,7 @@ products: allShopifyProduct(
         id
         localFile {
           childImageSharp {
-            fluid(maxWidth: 910, maxHeight: 910) {
-              ...GatsbyImageSharpFluid_withWebp
-            }
+            gatsbyImageData(width: 910, height: 910, placeholder: BLURRED)
           }
         }
         altText
@@ -197,15 +222,15 @@ products: allShopifyProduct(
 }
 ```
 
-Then you would use `gatsby-image` to render the image:
+Then you would use `gatsby-plugin-image` to render the image:
 
 ```js
-import Image from "gatsby-image";
+import { GatsbyImage, getImage } from "gatsby-plugin-image";
 
 function ProductListing(product) {
-  const fluid = product.featuredImage.localFile.childImageSharp.fluid;
+  const image = getImage(product.featuredImage.localFile);
 
-  return <Image fluid={fluid} alt={product.featuredImage.altText} />;
+  return <GatsbyImage image={image} alt={product.featuredImage.altText} />;
 }
 ```
 

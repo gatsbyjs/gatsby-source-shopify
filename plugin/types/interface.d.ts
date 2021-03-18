@@ -43,3 +43,22 @@ interface CurrentBulkOperationResponse {
     status: BulkOperationStatus;
   };
 }
+
+interface UserError {
+  field?: string[];
+  message: string;
+}
+
+interface BulkOperationRunQueryResponse {
+  bulkOperationRunQuery: {
+    userErrors: UserError[];
+    bulkOperation: BulkOperationNode;
+  };
+}
+
+interface BulkOperationCancelResponse {
+  bulkOperationCancel: {
+    bulkOperation: BulkOperationNode;
+    userErrors: UserError[];
+  };
+}

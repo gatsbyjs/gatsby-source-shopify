@@ -15,23 +15,6 @@ import {
   incrementalCollectionsQuery,
 } from "./queries";
 
-interface UserError {
-  field: string[];
-  message: string;
-}
-
-export interface BulkOperationRunQueryResponse {
-  bulkOperationRunQuery: {
-    userErrors: UserError[];
-    bulkOperation: BulkOperationNode;
-  };
-}
-
-export interface BulkOperationCancelResponse {
-  bulkOperation: BulkOperationNode;
-  userErrors: UserError[];
-}
-
 export interface ShopifyBulkOperation {
   execute: () => Promise<BulkOperationRunQueryResponse>;
   name: string;
@@ -43,6 +26,7 @@ export interface ShopifyBulkOperation {
 }
 
 const finishedStatuses = [`COMPLETED`, `FAILED`, `CANCELED`, `EXPIRED`];
+const failedStatuses = [`FAILED`, `CANCELED`];
 
 function defaultProcessor(objects: BulkResults, builder: NodeBuilder) {
   return objects.map(builder.buildNode);
@@ -107,12 +91,17 @@ export function createOperations(
 
     if (bulkOperation.status === `RUNNING`) {
       reporter.info(
-        `Canceling a currently running operation: ${bulkOperation.id}`
+        `Canceling a currently running operation: ${bulkOperation.id}, this could take a few moments`
       );
-      bulkOperation = (await cancelOperation(bulkOperation.id)).bulkOperation;
+
+      const { bulkOperationCancel } = await cancelOperation(bulkOperation.id);
+
+      bulkOperation = bulkOperationCancel.bulkOperation;
+
       while (bulkOperation.status !== `CANCELED`) {
         await new Promise((resolve) => setTimeout(resolve, 100));
-        bulkOperation = (await currentOperation()).currentBulkOperation;
+        const currentOp = await currentOperation();
+        bulkOperation = currentOp.currentBulkOperation;
       }
     } else {
       /**
@@ -158,7 +147,7 @@ export function createOperations(
       `);
     }
 
-    if (operation.node.status === "FAILED") {
+    if (failedStatuses.includes(operation.node.status)) {
       throw new OperationError(operation.node);
     }
 

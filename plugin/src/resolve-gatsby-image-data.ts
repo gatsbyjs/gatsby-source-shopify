@@ -4,19 +4,19 @@ import {
   IImage,
   ImageFormat,
 } from "gatsby-plugin-image";
+import { ShopifyImage, urlBuilder } from "./get-shopify-image";
 
-const validFormats = new Set(["jpg", "png", "webp"]);
 type ImageLayout = "constrained" | "fixed" | "fullWidth";
 
 export async function resolveGatsbyImageData(
-  image: Node & { width: number; height: number; originalSrc: string },
+  image: Node & ShopifyImage,
   {
-    formats = ["auto", "webp"],
+    formats = ["auto"],
     layout = "constrained",
     ...options
   }: { formats: Array<ImageFormat>; layout: ImageLayout }
 ) {
-  let [basename, version] = image.originalSrc.split("?");
+  let [basename] = image.originalSrc.split("?");
 
   const dot = basename.lastIndexOf(".");
   let ext = "";
@@ -31,26 +31,17 @@ export async function resolveGatsbyImageData(
     height,
     toFormat
   ): IImage => {
-    if (!validFormats.has(toFormat)) {
-      console.warn(
-        `${toFormat} is not a valid format. Valid formats are: ${[
-          ...validFormats,
-        ].join(", ")}`
-      );
-      toFormat = "jpg";
-    }
-    let suffix = "";
-    if (toFormat === ext) {
-      suffix = `.${toFormat}`;
-    } else {
-      suffix = `.${ext}.${toFormat}`;
-    }
-
     return {
       width,
       height,
       format: toFormat,
-      src: `${filename}_${width}x${height}_crop_center${suffix}?${version}`,
+      src: urlBuilder({
+        width,
+        height,
+        baseUrl: filename,
+        format: toFormat,
+        options: {},
+      }),
     };
   };
   const sourceMetadata = {

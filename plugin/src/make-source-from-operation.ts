@@ -15,7 +15,8 @@ export function makeSourceFromOperation(
   pluginOptions: ShopifyPluginOptions
 ) {
   return async function sourceFromOperation(
-    op: ShopifyBulkOperation
+    op: ShopifyBulkOperation,
+    isPriorityBuild = process.env.IS_PRODUCTION_BRANCH === `true`
   ): Promise<void> {
     const { reporter, actions, cache } = gatsbyApi;
     const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typeName;
@@ -27,9 +28,7 @@ export function makeSourceFromOperation(
     operationTimer.start();
 
     try {
-      const isProd = process.env.IS_PRODUCTION_BRANCH === "true";
-
-      if (isProd) {
+      if (isPriorityBuild) {
         await cancelOperationInProgress();
       } else {
         await finishLastOperation();
@@ -42,13 +41,19 @@ export function makeSourceFromOperation(
 
       if (userErrors.length) {
         reporter.panic(
-          userErrors.map((e) => ({
-            id: errorCodes.bulkOperationFailed,
-            context: {
-              sourceMessage: `Couldn't initiate bulk operation query`,
-            },
-            error: new Error(`${e.field.join(".")}: ${e.message}`),
-          }))
+          userErrors.map((e) => {
+            const msg = e.field
+              ? `${e.field.join(".")}: ${e.message}`
+              : e.message;
+
+            return {
+              id: errorCodes.bulkOperationFailed,
+              context: {
+                sourceMessage: `Couldn't initiate bulk operation query`,
+              },
+              error: new Error(msg),
+            };
+          })
         );
       }
 
