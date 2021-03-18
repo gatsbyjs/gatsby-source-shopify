@@ -43,29 +43,19 @@ export function createSchemaCustomization(
         variants: {
           type: "[ShopifyProductVariant]",
           extensions: {
-            directives: [
-              {
-                name: "@link",
-                args: {
-                  from: "id",
-                  by: "productId",
-                },
-              },
-            ],
+            link: {
+              from: "id",
+              by: "productId",
+            },
           },
         },
         images: {
           type: "[ShopifyProductImage]",
           extensions: {
-            directives: [
-              {
-                name: "link",
-                args: {
-                  from: "id",
-                  by: "productId",
-                },
-              },
-            ],
+            link: {
+              from: "id",
+              by: "productId",
+            },
           },
         },
       },
@@ -77,15 +67,10 @@ export function createSchemaCustomization(
         product: {
           type: "ShopifyProduct!",
           extensions: {
-            directives: [
-              {
-                name: "link",
-                args: {
-                  from: "productId",
-                  by: "id",
-                },
-              },
-            ],
+            link: {
+              from: "productId",
+              by: "id",
+            },
           },
         },
       },
@@ -97,29 +82,19 @@ export function createSchemaCustomization(
         product: {
           type: "ShopifyProduct",
           extensions: {
-            directives: [
-              {
-                name: "link",
-                args: {
-                  from: "productId",
-                  by: "id",
-                },
-              },
-            ],
+            link: {
+              from: "productId",
+              by: "id",
+            },
           },
         },
         metafields: {
           type: `[ShopifyMetafield]`,
           extensions: {
-            directives: [
-              {
-                name: "link",
-                args: {
-                  from: "id",
-                  by: "productVariantId",
-                },
-              },
-            ],
+            link: {
+              from: "id",
+              by: "productVariantId",
+            },
           },
         },
       },
@@ -137,15 +112,10 @@ export function createSchemaCustomization(
         productVariant: {
           type: "ShopifyProductVariant!",
           extensions: {
-            directives: [
-              {
-                name: "link",
-                args: {
-                  from: "productVariantId",
-                  by: "id",
-                },
-              },
-            ],
+            link: {
+              from: "productVariantId",
+              by: "id",
+            },
           },
         },
       },
@@ -161,15 +131,10 @@ export function createSchemaCustomization(
           products: {
             type: "[ShopifyProduct]",
             extensions: {
-              directives: [
-                {
-                  name: "link",
-                  args: {
-                    from: "productIds",
-                    by: "id",
-                  },
-                },
-              ],
+              link: {
+                from: "productIds",
+                by: "id",
+              },
             },
           },
         },
