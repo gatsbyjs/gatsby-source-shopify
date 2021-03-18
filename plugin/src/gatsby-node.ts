@@ -20,7 +20,10 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
-    typePrefix: Joi.string().pattern(new RegExp('(^[A-Z][\w|\d]*)')).default(''),
+    typePrefix: Joi.string()
+      .pattern(new RegExp('(^[A-Z][\w|\d]*)'))
+      .message('"typePrefix" can only be alphanumeric characters, starting with an uppercase letter')
+      .default(''),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
