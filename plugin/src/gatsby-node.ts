@@ -21,7 +21,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
     typePrefix: Joi.string()
-      .pattern(new RegExp('(^[A-Z][\w|\d]*)'))
+      .pattern(new RegExp('(^[A-Z]\w*)'))
       .message('"typePrefix" can only be alphanumeric characters, starting with an uppercase letter')
       .default(''),
     shopifyConnections: Joi.array()
