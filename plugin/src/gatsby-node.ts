@@ -90,7 +90,7 @@ async function sourceChangedNodes(
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.[`lastBuildTimeFor${pluginOptions.typePrefix}`]
+    ]?.[`lastBuildTime${pluginOptions.typePrefix}`]
   );
   
   for (const nodeType of shopifyNodeTypes) {
@@ -166,7 +166,7 @@ export async function sourceNodes(
     `gatsby-source-shopify-experimental`
   ];
 
-  const lastBuildTime = pluginStatus?.[`lastBuildTimeFor${pluginOptions.typePrefix}`];
+  const lastBuildTime = pluginStatus?.[`lastBuildTime${pluginOptions.typePrefix}`];
 
   if (lastBuildTime !== undefined) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
@@ -181,10 +181,10 @@ export async function sourceNodes(
     pluginStatus !== undefined
       ? {
           ...pluginStatus,
-          [`lastBuildTimeFor${pluginOptions.typePrefix}`]: Date.now()
+          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now()
         }
       : {
-          [`lastBuildTimeFor${pluginOptions.typePrefix}`]: Date.now()
+          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now()
         }  
   );
 }
