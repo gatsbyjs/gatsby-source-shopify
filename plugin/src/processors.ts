@@ -13,7 +13,7 @@ export function collectionsProcessor(
     const [fullId, remoteType] = result.id.match(idPattern) || [];
     if (remoteType === `Product`) {
       const productIds = [fullId];
-      let j = i - 1;
+      let j = i;
 
       while (objects[j].id !== result.__parentId) {
         const [siblingId, siblingRemoteType] =
