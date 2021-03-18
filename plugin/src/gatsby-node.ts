@@ -20,7 +20,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
-    typePrefix: Joi.string().default(''),
+    typePrefix: Joi.string().pattern(new RegExp('(^[A-Z][\w|\d]*)')).default(''),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
