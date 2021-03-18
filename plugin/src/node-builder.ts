@@ -13,7 +13,7 @@ function attachParentId(
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typePrefix}_${fullId}`);
+    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${fullId}`);
     delete obj.__parentId;
   }
 }
