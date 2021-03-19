@@ -24,43 +24,45 @@ export function createSchemaCustomization(
   //   productImageFields.localFile = `File @link`;
   // }
 
-  const typeDefs = [
-    schema.buildObjectType({
-      name: "ShopifyProduct",
-      fields: {
-        // collections: includeCollections ? {
-        //   type: "[ShopifyCollection]",
-        //   extensions: {
-        //     directives: [{
-        //       name: "link",
-        //       args: {
-        //         from: "id",
-        //         by: "productIds"
-        //       }
-        //     }]
-        //   }
-        // } : undefined,
-        variants: {
-          type: "[ShopifyProductVariant]",
-          extensions: {
-            link: {
-              from: "id",
-              by: "productId",
-            },
-          },
-        },
-        images: {
-          type: "[ShopifyProductImage]",
-          extensions: {
-            link: {
-              from: "id",
-              by: "productId",
-            },
+  const productDef = schema.buildObjectType({
+    name: "ShopifyProduct",
+    fields: {
+      variants: {
+        type: "[ShopifyProductVariant]",
+        extensions: {
+          link: {
+            from: "id",
+            by: "productId",
           },
         },
       },
-      interfaces: ["Node"],
-    }),
+      images: {
+        type: "[ShopifyProductImage]",
+        extensions: {
+          link: {
+            from: "id",
+            by: "productId",
+          },
+        },
+      },
+    },
+    interfaces: ["Node"],
+  });
+
+  if (includeCollections && productDef.config.fields) {
+    productDef.config.fields.collections = {
+      type: "[ShopifyCollection]",
+      extensions: {
+        link: {
+          from: "id",
+          by: "productIds",
+        },
+      },
+    };
+  }
+
+  const typeDefs = [
+    productDef,
     schema.buildObjectType({
       name: "ShopifyProductImage",
       fields: {
