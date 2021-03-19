@@ -49,20 +49,20 @@ interface ProcessorMap {
   ) => Promise<void>;
 }
 
+interface ImageData {
+  id: string;
+  originalSrc: string;
+  localFile: string | undefined;
+}
+
 async function processChildImage(
   node: NodeInput,
-  childKey: string,
+  getImageData: (node: NodeInput) => ImageData | undefined,
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
   if (pluginOptions.downloadImages) {
-    const image = node[childKey] as
-      | {
-          id: string;
-          originalSrc: string;
-          localFile: string | undefined;
-        }
-      | undefined;
+    const image = getImageData(node);
 
     if (image) {
       const url = image.originalSrc;
@@ -104,10 +104,34 @@ const processorMap: ProcessorMap = {
     }
   },
   Collection: async (node, gatsbyApi, options) => {
-    return processChildImage(node, "image", gatsbyApi, options);
+    return processChildImage(
+      node,
+      (node) => node.image as ImageData,
+      gatsbyApi,
+      options
+    );
   },
   Product: async (node, gatsbyApi, options) => {
-    return processChildImage(node, "featuredImage", gatsbyApi, options);
+    await processChildImage(
+      node,
+      (node) => node.featuredImage as ImageData,
+      gatsbyApi,
+      options
+    );
+    await processChildImage(
+      node,
+      (node) => {
+        const media = node.featuredMedia as {
+          preview: {
+            image: ImageData;
+          };
+        };
+
+        return media.preview.image;
+      },
+      gatsbyApi,
+      options
+    );
   },
 };
 
