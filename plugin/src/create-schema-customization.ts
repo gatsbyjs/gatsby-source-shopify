@@ -24,11 +24,13 @@ export function createSchemaCustomization(
   //   productImageFields.localFile = `File @link`;
   // }
 
+  const name = (name: string) => `${pluginOptions.typePrefix}${name}`;
+
   const productDef = schema.buildObjectType({
-    name: "ShopifyProduct",
+    name: name("ShopifyProduct"),
     fields: {
       variants: {
-        type: "[ShopifyProductVariant]",
+        type: `[${name("ShopifyProductVariant")}]`,
         extensions: {
           link: {
             from: "id",
@@ -37,7 +39,7 @@ export function createSchemaCustomization(
         },
       },
       images: {
-        type: "[ShopifyProductImage]",
+        type: `[${name("ShopifyProductImage")}]`,
         extensions: {
           link: {
             from: "id",
@@ -51,7 +53,7 @@ export function createSchemaCustomization(
 
   if (includeCollections && productDef.config.fields) {
     productDef.config.fields.collections = {
-      type: "[ShopifyCollection]",
+      type: `[${name("ShopifyCollection")}]`,
       extensions: {
         link: {
           from: "id",
@@ -64,7 +66,7 @@ export function createSchemaCustomization(
   const typeDefs = [
     productDef,
     schema.buildObjectType({
-      name: "ShopifyProductImage",
+      name: name("ShopifyProductImage"),
       fields: {
         product: {
           type: "ShopifyProduct!",
@@ -79,10 +81,10 @@ export function createSchemaCustomization(
       interfaces: ["Node"],
     }),
     schema.buildObjectType({
-      name: "ShopifyProductVariant",
+      name: name("ShopifyProductVariant"),
       fields: {
         product: {
-          type: "ShopifyProduct",
+          type: name("ShopifyProduct!"),
           extensions: {
             link: {
               from: "productId",
@@ -91,7 +93,7 @@ export function createSchemaCustomization(
           },
         },
         metafields: {
-          type: `[ShopifyMetafield]`,
+          type: `[${name("ShopifyMetafield")}]`,
           extensions: {
             link: {
               from: "id",
@@ -109,10 +111,10 @@ export function createSchemaCustomization(
      * where the type name is partially derived from the parent ID.
      */
     schema.buildObjectType({
-      name: "ShopifyMetafield",
+      name: name("ShopifyMetafield"),
       fields: {
         productVariant: {
-          type: "ShopifyProductVariant!",
+          type: name("ShopifyProductVariant!"),
           extensions: {
             link: {
               from: "productVariantId",
@@ -128,10 +130,10 @@ export function createSchemaCustomization(
   if (includeCollections) {
     typeDefs.push(
       schema.buildObjectType({
-        name: "ShopifyCollection",
+        name: name("ShopifyCollection"),
         fields: {
           products: {
-            type: "[ShopifyProduct]",
+            type: `[${name("ShopifyProduct")}]`,
             extensions: {
               link: {
                 from: "productIds",
