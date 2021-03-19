@@ -18,6 +18,10 @@ const server = setupServer();
 // @ts-ignore
 global.setTimeout = (fn: Function) => fn();
 
+jest.mock("gatsby-source-filesystem", () => ({
+  createRemoteFileNode: jest.fn().mockResolvedValue({ id: "12345" }),
+}));
+
 beforeAll(() => {
   server.listen();
 });
@@ -28,6 +32,102 @@ afterEach(() => {
 
 afterAll(() => {
   server.close();
+});
+
+describe("When downloading images", () => {
+  const bulkResult = {
+    id: "gid://shopify/Product/12345",
+    featuredMedia: {
+      preview: {
+        image: {
+          originalSrc: "http://www.example.com/some-image.jpg",
+        },
+      },
+    },
+  };
+
+  beforeEach(() => {
+    server.use(
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolveOnce(currentBulkOperation("COMPLETED"))
+      ),
+      startOperation,
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "",
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
+      ),
+      rest.get("http://results.url", (_req, res, ctx) => {
+        return res(ctx.text(JSON.stringify(bulkResult)));
+      })
+    );
+  });
+
+  it("links a local file to the featured media", async () => {
+    const createNode = jest.fn();
+    const gatsbyApiMock = jest.fn().mockImplementation(() => {
+      return {
+        cache: {
+          set: jest.fn(),
+        },
+        actions: {
+          createNode,
+        },
+        createContentDigest: jest.fn(),
+        createNodeId: jest.fn(),
+        reporter: {
+          info: jest.fn(),
+          error: jest.fn(),
+          panic: jest.fn(),
+          activityTimer: () => ({
+            start: jest.fn(),
+            end: jest.fn(),
+            setStatus: jest.fn(),
+          }),
+        },
+      };
+    });
+
+    const gatsbyApi = gatsbyApiMock as jest.Mock<SourceNodesArgs>;
+    const options = {
+      apiKey: ``,
+      password: ``,
+      storeUrl: "my-shop.shopify.com",
+      downloadImages: true,
+    };
+    const operations = createOperations(options, gatsbyApi());
+
+    const sourceFromOperation = makeSourceFromOperation(
+      operations.finishLastOperation,
+      operations.completedOperation,
+      operations.cancelOperationInProgress,
+      gatsbyApi(),
+      options
+    );
+
+    await sourceFromOperation(operations.createProductsOperation, true);
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shopifyId: bulkResult.id,
+        featuredMedia: {
+          preview: {
+            image: expect.objectContaining({
+              localFile: "12345",
+            }),
+          },
+        },
+      })
+    );
+  });
 });
 
 describe("A production build", () => {
