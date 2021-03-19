@@ -4,13 +4,11 @@ export function createSchemaCustomization(
   { actions, schema }: CreateSchemaCustomizationArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const includeCollections =
-    pluginOptions.shopifyConnections &&
-    pluginOptions.shopifyConnections.includes("collections");
+  const includeCollections = pluginOptions.shopifyConnections?.includes(
+    "collections"
+  );
 
-  const includeOrders =
-    pluginOptions.shopifyConnections &&
-    pluginOptions.shopifyConnections.includes("orders");
+  const includeOrders = pluginOptions.shopifyConnections?.includes("orders");
 
   const name = (name: string) => `${pluginOptions.typePrefix}${name}`;
 
