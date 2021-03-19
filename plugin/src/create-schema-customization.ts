@@ -51,6 +51,31 @@ export function createSchemaCustomization(
     interfaces: ["Node"],
   });
 
+  const productImageDef = schema.buildObjectType({
+    name: name("ShopifyProductImage"),
+    fields: {
+      product: {
+        type: "ShopifyProduct!",
+        extensions: {
+          link: {
+            from: "productId",
+            by: "id",
+          },
+        },
+      },
+    },
+    interfaces: ["Node"],
+  });
+
+  if (pluginOptions.downloadImages && productImageDef.config.fields) {
+    productImageDef.config.fields.localFile = {
+      type: "File",
+      extensions: {
+        link: {},
+      },
+    };
+  }
+
   if (includeCollections && productDef.config.fields) {
     productDef.config.fields.collections = {
       type: `[${name("ShopifyCollection")}]`,
@@ -65,21 +90,7 @@ export function createSchemaCustomization(
 
   const typeDefs = [
     productDef,
-    schema.buildObjectType({
-      name: name("ShopifyProductImage"),
-      fields: {
-        product: {
-          type: "ShopifyProduct!",
-          extensions: {
-            link: {
-              from: "productId",
-              by: "id",
-            },
-          },
-        },
-      },
-      interfaces: ["Node"],
-    }),
+    productImageDef,
     schema.buildObjectType({
       name: name("ShopifyProductVariant"),
       fields: {
