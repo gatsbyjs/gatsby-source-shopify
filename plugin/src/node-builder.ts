@@ -122,12 +122,12 @@ const processorMap: ProcessorMap = {
       node,
       (node) => {
         const media = node.featuredMedia as {
-          preview: {
-            image: ImageData;
+          preview?: {
+            image?: ImageData;
           };
         };
 
-        return media.preview.image;
+        return media.preview?.image;
       },
       gatsbyApi,
       options
