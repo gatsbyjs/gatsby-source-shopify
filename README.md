@@ -105,6 +105,10 @@ Not set by default. If set to `true`, this plugin will download and process imag
 
 The plugin's default behavior is to fall back to Shopify's CDN.
 
+`typePrefix: string`
+
+Not set by default. If set to a string (example `MyStore`) node names will be `allMyStoreShopifyProducts` instead of `allShopifyProducts`.
+
 ## Images
 
 We offer two options for displaying Shopify images in your Gatsby site. The default option is to use the Shopify CDN along with [gatsby-plugin-image][gatsby-plugin-image], but you can also opt-in to downloading the images as part of the build process. Your choice will result in differences to the schema. Both options are explained below.

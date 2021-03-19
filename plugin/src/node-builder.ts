@@ -4,12 +4,16 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 // 'gid://shopify/Metafield/6936247730264'
 export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
-function attachParentId(obj: Record<string, any>, gatsbyApi: SourceNodesArgs) {
+function attachParentId(
+  obj: Record<string, any>, 
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions,
+) {
   if (obj.__parentId) {
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(fullId);
+    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${fullId}`);
     delete obj.__parentId;
   }
 }
@@ -41,7 +45,7 @@ interface ProcessorMap {
   [remoteType: string]: (
     node: NodeInput,
     gatsbyApi: SourceNodesArgs,
-    options: ShopifyPluginOptions
+    pluginOptions: ShopifyPluginOptions
   ) => Promise<void>;
 }
 
@@ -49,9 +53,9 @@ async function processChildImage(
   node: NodeInput,
   childKey: string,
   gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
+  pluginOptions: ShopifyPluginOptions
 ) {
-  if (options.downloadImages) {
+  if (pluginOptions.downloadImages) {
     const image = node[childKey] as
       | {
           id: string;
@@ -109,7 +113,7 @@ const processorMap: ProcessorMap = {
 
 export function nodeBuilder(
   gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
+  pluginOptions: ShopifyPluginOptions
 ): NodeBuilder {
   return {
     async buildNode(result: BulkResult) {
@@ -123,19 +127,19 @@ export function nodeBuilder(
 
       const processor = processorMap[remoteType] || (() => Promise.resolve());
 
-      attachParentId(result, gatsbyApi);
+      attachParentId(result, gatsbyApi, pluginOptions);
 
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(result.id),
+        id: gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${result.id}`),
         internal: {
-          type: `Shopify${remoteType}`,
+          type: `${pluginOptions.typePrefix}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };
 
-      await processor(node, gatsbyApi, options);
+      await processor(node, gatsbyApi, pluginOptions);
 
       return node;
     },

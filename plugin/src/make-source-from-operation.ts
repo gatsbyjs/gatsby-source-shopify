@@ -12,13 +12,14 @@ export function makeSourceFromOperation(
   completedOperation: (id: string) => Promise<{ node: BulkOperationNode }>,
   cancelOperationInProgress: () => Promise<void>,
   gatsbyApi: SourceNodesArgs,
-  options: ShopifyPluginOptions
+  pluginOptions: ShopifyPluginOptions
 ) {
   return async function sourceFromOperation(
     op: ShopifyBulkOperation,
     isPriorityBuild = process.env.IS_PRODUCTION_BRANCH === `true`
   ): Promise<void> {
     const { reporter, actions, cache } = gatsbyApi;
+    const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix;
 
     const operationTimer = reporter.activityTimer(
       `Source from bulk operation ${op.name}`
@@ -59,7 +60,7 @@ export function makeSourceFromOperation(
       operationTimer.setStatus(
         `Polling bulk operation ${op.name}: ${bulkOperation.id}`
       );
-      await cache.set(LAST_SHOPIFY_BULK_OPERATION, bulkOperation.id);
+      await cache.set(cacheKey, bulkOperation.id);
 
       let resp = await completedOperation(bulkOperation.id);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
@@ -94,7 +95,7 @@ export function makeSourceFromOperation(
 
       await Promise.all(
         op
-          .process(objects, nodeBuilder(gatsbyApi, options), gatsbyApi)
+          .process(objects, nodeBuilder(gatsbyApi, pluginOptions), gatsbyApi)
           .map(async (promise) => {
             const node = await promise;
             actions.createNode(node);
@@ -103,7 +104,7 @@ export function makeSourceFromOperation(
 
       operationTimer.end();
 
-      await cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
+      await cache.set(cacheKey, undefined);
     } catch (e) {
       if (e instanceof OperationError) {
         const code = errorCodes.bulkOperationFailed;

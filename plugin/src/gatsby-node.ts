@@ -20,6 +20,10 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
     verboseLogging: Joi.boolean(),
+    typePrefix: Joi.string()
+      .pattern(new RegExp('(^[A-Z]\w*)'))
+      .message('"typePrefix" can only be alphanumeric characters, starting with an uppercase letter')
+      .default(''),
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
@@ -89,11 +93,12 @@ async function sourceChangedNodes(
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.lastBuildTime
+    ]?.[`lastBuildTime${pluginOptions.typePrefix}`]
   );
+  
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
-      .getNodesByType(nodeType)
+      .getNodesByType(`${pluginOptions.typePrefix}${nodeType}`)
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
@@ -149,23 +154,24 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const lastOperationId = await gatsbyApi.cache.get(
-    LAST_SHOPIFY_BULK_OPERATION
-  );
+  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix;
+  const lastOperationId = await gatsbyApi.cache.get(cacheKey);
 
   if (lastOperationId) {
     gatsbyApi.reporter.info(`Cancelling last operation: ${lastOperationId}`);
     await createOperations(pluginOptions, gatsbyApi).cancelOperation(
       lastOperationId
     );
-    await gatsbyApi.cache.set(LAST_SHOPIFY_BULK_OPERATION, undefined);
+    await gatsbyApi.cache.set(cacheKey, undefined);
   }
 
-  const lastBuildTime = gatsbyApi.store.getState().status.plugins?.[
+  const pluginStatus = gatsbyApi.store.getState().status.plugins?.[
     `gatsby-source-shopify-experimental`
-  ]?.lastBuildTime;
+  ];
 
-  if (lastBuildTime) {
+  const lastBuildTime = pluginStatus?.[`lastBuildTime${pluginOptions.typePrefix}`];
+
+  if (lastBuildTime !== undefined) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
     await sourceChangedNodes(gatsbyApi, pluginOptions);
   } else {
@@ -173,54 +179,65 @@ export async function sourceNodes(
     await sourceAllNodes(gatsbyApi, pluginOptions);
   }
 
-  gatsbyApi.reporter.info(`Finished sourcing nodes, caching last build time`);
-  gatsbyApi.actions.setPluginStatus({ lastBuildTime: Date.now() });
+  gatsbyApi.reporter.info(`Finished sourcing nodes, caching last build time`);  
+  gatsbyApi.actions.setPluginStatus(
+    pluginStatus !== undefined
+      ? {
+          ...pluginStatus,
+          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now()
+        }
+      : {
+          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now()
+        }  
+  );
 }
 
 export function createSchemaCustomization({
   actions,
-}: CreateSchemaCustomizationArgs) {
+}: CreateSchemaCustomizationArgs, {
+  typePrefix
+}: ShopifyPluginOptions) {
   actions.createTypes(`
-    type ShopifyProductVariant implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "id")
-      metafields: [ShopifyMetafield] @link(from: "id", by: "productVariantId")
+    type ${typePrefix}ShopifyProductVariant implements Node {
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
+      metafields: [${typePrefix}ShopifyMetafield] @link(from: "id", by: "productVariantId")
     }
 
-    type ShopifyProduct implements Node {
-      variants: [ShopifyProductVariant] @link(from: "id", by: "productId")
-      images: [ShopifyProductImage] @link(from: "id", by: "productId")
-      collections: [ShopifyCollection] @link(from: "id", by: "productIds")
+    type ${typePrefix}ShopifyProduct implements Node {
+      variants: [${typePrefix}ShopifyProductVariant] @link(from: "id", by: "productId")
+      images: [${typePrefix}ShopifyProductImage] @link(from: "id", by: "productId")
+      collections: [${typePrefix}ShopifyCollection] @link(from: "id", by: "productIds")
     }
 
-    type ShopifyCollection implements Node {
-      products: [ShopifyProduct] @link(from: "productIds", by: "id")
+    type ${typePrefix}ShopifyCollection implements Node {
+      products: [${typePrefix}ShopifyProduct] @link(from: "productIds", by: "id")
     }
 
-    type ShopifyProductFeaturedImage {
+    type ${typePrefix}ShopifyProductFeaturedImage {
       localFile: File @link
     }
 
-    type ShopifyCollectionImage {
+    type ${typePrefix}ShopifyCollectionImage {
       localFile: File @link
     }
 
-    type ShopifyMetafield implements Node {
-      productVariant: ShopifyProductVariant @link(from: "productVariantId", by: "id")
+    type ${typePrefix}ShopifyMetafield implements Node {
+      productVariant: ${typePrefix}ShopifyProductVariant @link(from: "productVariantId", by: "id")
     }
 
-    type ShopifyOrder implements Node {
-      lineItems: [ShopifyLineItem] @link(from: "id", by: "orderId")
+    type ${typePrefix}ShopifyOrder implements Node {
+      lineItems: [${typePrefix}ShopifyLineItem] @link(from: "id", by: "orderId")
     }
 
-    type ShopifyLineItem implements Node {
-      product: ShopifyProduct @link(from: "productId", by: "id")
-      order: ShopifyOrder @link(from: "orderId", by: "id")
+    type ${typePrefix}ShopifyLineItem implements Node {
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
+      order: ${typePrefix}ShopifyOrder @link(from: "orderId", by: "id")
     }
 
-    type ShopifyProductImage implements Node {
+    type ${typePrefix}ShopifyProductImage implements Node {
       altText: String
       originalSrc: String!
-      product: ShopifyProduct @link(from: "productId", by: "id")
+      product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
       localFile: File @link
     }
   `);
@@ -228,19 +245,19 @@ export function createSchemaCustomization({
 
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages }: ShopifyPluginOptions
+  { downloadImages, typePrefix }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
     const resolvers = {
-      ShopifyProductImage: {
+      [`${typePrefix}ShopifyProductImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      ShopifyProductFeaturedImage: {
+      [`${typePrefix}ShopifyProductFeaturedImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
 
-      ShopifyCollectionImage: {
+      [`${typePrefix}ShopifyCollectionImage`]: {
         gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
       },
     };
