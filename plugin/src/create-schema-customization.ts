@@ -10,7 +10,7 @@ export function createSchemaCustomization(
 
   const includeOrders = pluginOptions.shopifyConnections?.includes("orders");
 
-  const name = (name: string) => `${pluginOptions.typePrefix}${name}`;
+  const name = (name: string) => `${pluginOptions.typePrefix || ""}${name}`;
 
   const productDef = schema.buildObjectType({
     name: name("ShopifyProduct"),
