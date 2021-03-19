@@ -5,15 +5,15 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
 function attachParentId(
-  obj: Record<string, any>, 
+  obj: Record<string, any>,
   gatsbyApi: SourceNodesArgs,
-  pluginOptions: ShopifyPluginOptions,
+  { typePrefix = "" }: ShopifyPluginOptions
 ) {
   if (obj.__parentId) {
     const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${fullId}`);
+    obj[idField] = gatsbyApi.createNodeId(`${typePrefix}${fullId}`);
     delete obj.__parentId;
   }
 }
@@ -132,9 +132,11 @@ export function nodeBuilder(
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${result.id}`),
+        id: gatsbyApi.createNodeId(
+          `${pluginOptions.typePrefix || ""}${result.id}`
+        ),
         internal: {
-          type: `${pluginOptions.typePrefix}Shopify${remoteType}`,
+          type: `${pluginOptions.typePrefix || ""}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
         },
       };

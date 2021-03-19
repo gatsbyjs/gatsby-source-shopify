@@ -95,12 +95,12 @@ async function sourceChangedNodes(
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.[`lastBuildTime${pluginOptions.typePrefix}`]
+    ]?.[`lastBuildTime${pluginOptions.typePrefix || ""}`]
   );
 
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
-      .getNodesByType(`${pluginOptions.typePrefix}${nodeType}`)
+      .getNodesByType(`${pluginOptions.typePrefix || ""}${nodeType}`)
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
@@ -156,7 +156,7 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix;
+  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix || "";
   const lastOperationId = await gatsbyApi.cache.get(cacheKey);
 
   if (lastOperationId) {
@@ -172,7 +172,7 @@ export async function sourceNodes(
   ];
 
   const lastBuildTime =
-    pluginStatus?.[`lastBuildTime${pluginOptions.typePrefix}`];
+    pluginStatus?.[`lastBuildTime${pluginOptions.typePrefix || ""}`];
 
   if (lastBuildTime !== undefined) {
     gatsbyApi.reporter.info(`Cache is warm, running an incremental build`);
@@ -187,17 +187,17 @@ export async function sourceNodes(
     pluginStatus !== undefined
       ? {
           ...pluginStatus,
-          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now(),
+          [`lastBuildTime${pluginOptions.typePrefix || ""}`]: Date.now(),
         }
       : {
-          [`lastBuildTime${pluginOptions.typePrefix}`]: Date.now(),
+          [`lastBuildTime${pluginOptions.typePrefix || ""}`]: Date.now(),
         }
   );
 }
 
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
-  { downloadImages, typePrefix }: ShopifyPluginOptions
+  { downloadImages, typePrefix = "" }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
     const resolvers = {
