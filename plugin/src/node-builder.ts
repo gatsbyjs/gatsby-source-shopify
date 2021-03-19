@@ -132,7 +132,7 @@ export function nodeBuilder(
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(`${pluginOptions.typePrefix}_${result.id}`),
+        id: gatsbyApi.createNodeId(`${pluginOptions.typePrefix}${result.id}`),
         internal: {
           type: `${pluginOptions.typePrefix}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),
