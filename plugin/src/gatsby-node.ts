@@ -195,57 +195,6 @@ export async function sourceNodes(
   );
 }
 
-// export function createSchemaCustomization({
-//   actions,
-// }: CreateSchemaCustomizationArgs, {
-//   typePrefix
-// }: ShopifyPluginOptions) {
-//   actions.createTypes(`
-//     type ${typePrefix}ShopifyProductVariant implements Node {
-//       product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
-//       metafields: [${typePrefix}ShopifyMetafield] @link(from: "id", by: "productVariantId")
-//     }
-//
-//     type ${typePrefix}ShopifyProduct implements Node {
-//       variants: [${typePrefix}ShopifyProductVariant] @link(from: "id", by: "productId")
-//       images: [${typePrefix}ShopifyProductImage] @link(from: "id", by: "productId")
-//       collections: [${typePrefix}ShopifyCollection] @link(from: "id", by: "productIds")
-//     }
-//
-//     type ${typePrefix}ShopifyCollection implements Node {
-//       products: [${typePrefix}ShopifyProduct] @link(from: "productIds", by: "id")
-//     }
-//
-//     type ${typePrefix}ShopifyProductFeaturedImage {
-//       localFile: File @link
-//     }
-//
-//     type ${typePrefix}ShopifyCollectionImage {
-//       localFile: File @link
-//     }
-//
-//     type ${typePrefix}ShopifyMetafield implements Node {
-//       productVariant: ${typePrefix}ShopifyProductVariant @link(from: "productVariantId", by: "id")
-//     }
-//
-//     type ${typePrefix}ShopifyOrder implements Node {
-//       lineItems: [${typePrefix}ShopifyLineItem] @link(from: "id", by: "orderId")
-//     }
-//
-//     type ${typePrefix}ShopifyLineItem implements Node {
-//       product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
-//       order: ${typePrefix}ShopifyOrder @link(from: "orderId", by: "id")
-//     }
-//
-//     type ${typePrefix}ShopifyProductImage implements Node {
-//       altText: String
-//       originalSrc: String!
-//       product: ${typePrefix}ShopifyProduct @link(from: "productId", by: "id")
-//       localFile: File @link
-//     }
-//   `);
-// }
-
 export function createResolvers(
   { createResolvers }: CreateResolversArgs,
   { downloadImages, typePrefix }: ShopifyPluginOptions
