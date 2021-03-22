@@ -78,6 +78,7 @@ const shopifyNodeTypes = [
   `ShopifyProductFeaturedImage`,
   `ShopifyProductVariant`,
   `ShopifyProductVariantPricePair`,
+  `ShopifyProductFeaturedMediaPreviewImage`,
 ];
 
 async function sourceChangedNodes(
@@ -200,19 +201,22 @@ export function createResolvers(
   { downloadImages, typePrefix = "" }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
-    const resolvers = {
-      [`${typePrefix}ShopifyProductImage`]: {
-        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-      },
+    const imageNodeTypes = [
+      `ShopifyProductImage`,
+      `ShopifyProductFeaturedImage`,
+      `ShopifyCollectionImage`,
+      `ShopifyProductFeaturedMediaPreviewImage`,
+    ];
 
-      [`${typePrefix}ShopifyProductFeaturedImage`]: {
-        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-      },
-
-      [`${typePrefix}ShopifyCollectionImage`]: {
-        gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
-      },
-    };
+    const resolvers = imageNodeTypes.reduce(
+      (r, nodeType) => ({
+        ...r,
+        [`${typePrefix}${nodeType}`]: {
+          gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData),
+        },
+      }),
+      {}
+    );
 
     createResolvers(resolvers);
   }

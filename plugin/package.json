@@ -6,7 +6,8 @@
     "watch": "tsc-watch --outDir .",
     "build": "tsc --outDir .",
     "prepublish": "yarn build && cp ../README.md .",
-    "test": "jest"
+    "test": "jest",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --verbose=false"
   },
   "repository": {
     "type": "git",

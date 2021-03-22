@@ -201,6 +201,18 @@ export function createSchemaCustomization(
           },
         },
         interfaces: ["Node"],
+      }),
+      schema.buildObjectType({
+        name: name("ShopifyProductFeaturedMediaPreviewImage"),
+        fields: {
+          localFile: {
+            type: "File",
+            extensions: {
+              link: {},
+            },
+          },
+        },
+        interfaces: ["Node"],
       })
     );
 
