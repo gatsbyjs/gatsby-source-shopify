@@ -77,6 +77,7 @@ const shopifyNodeTypes = [
   `ShopifyCollectionImage`,
   `ShopifyProductFeaturedImage`,
   `ShopifyProductVariant`,
+  `ShopifyProductVariantImage`,
   `ShopifyProductVariantPricePair`,
   `ShopifyProductFeaturedMediaPreviewImage`,
 ];
@@ -203,6 +204,7 @@ export function createResolvers(
   if (!downloadImages) {
     const imageNodeTypes = [
       `ShopifyProductImage`,
+      `ShopifyProductVariantImage`,
       `ShopifyProductFeaturedImage`,
       `ShopifyCollectionImage`,
       `ShopifyProductFeaturedMediaPreviewImage`,

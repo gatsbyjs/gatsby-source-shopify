@@ -79,7 +79,7 @@ async function processChildImage(
   }
 }
 
-const processorMap: ProcessorMap = {
+export const processorMap: ProcessorMap = {
   LineItem: async (node, gatsbyApi) => {
     const lineItem = node;
     if (lineItem.product) {
@@ -129,6 +129,14 @@ const processorMap: ProcessorMap = {
 
         return media.preview?.image;
       },
+      gatsbyApi,
+      options
+    );
+  },
+  ProductVariant: async (node, gatsbyApi, options) => {
+    return processChildImage(
+      node,
+      (node) => node.image as ImageData,
       gatsbyApi,
       options
     );

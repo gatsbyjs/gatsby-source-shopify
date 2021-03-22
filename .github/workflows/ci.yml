@@ -26,6 +26,6 @@ jobs:
       - name: Run tests
         working-directory: ./plugin
         run: yarn test --coverage
-      - name: Uplaod coverage reports
+      - name: Upload coverage reports
         uses: codecov/codecov-action@v1
         if: matrix.node-version == '12.x'
