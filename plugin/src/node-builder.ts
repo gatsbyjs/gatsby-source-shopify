@@ -134,7 +134,12 @@ export const processorMap: ProcessorMap = {
     );
   },
   ProductVariant: async (node, gatsbyApi, options) => {
-    return processChildImage(node, "image", gatsbyApi, options);
+    return processChildImage(
+      node,
+      (node) => node.image as ImageData,
+      gatsbyApi,
+      options
+    );
   },
 };
 
