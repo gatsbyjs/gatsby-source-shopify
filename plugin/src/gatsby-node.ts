@@ -100,9 +100,9 @@ async function sourceChangedNodes(
   } = createOperations(pluginOptions, gatsbyApi);
   const { typePrefix = "" } = pluginOptions;
   const lastBuildTime = new Date(
-    gatsbyApi.store.getState().status.plugins?.[
-      `gatsby-source-shopify-experimental`
-    ]?.[`lastBuildTime${typePrefix}`]
+    gatsbyApi.store.getState().status.plugins?.[`gatsby-source-shopify`]?.[
+      `lastBuildTime${typePrefix}`
+    ]
   );
 
   for (const nodeType of shopifyNodeTypes) {
@@ -175,7 +175,7 @@ export async function sourceNodes(
   }
 
   const pluginStatus = gatsbyApi.store.getState().status.plugins?.[
-    `gatsby-source-shopify-experimental`
+    `gatsby-source-shopify`
   ];
 
   const lastBuildTime =
