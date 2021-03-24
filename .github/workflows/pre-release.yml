@@ -23,3 +23,5 @@ jobs:
       - name: Publish
         run: npm publish --tag rc
         working-directory: ./plugin
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
