@@ -28,3 +28,7 @@ jobs:
         with:
           node-version: "12.13.x"
       - run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
