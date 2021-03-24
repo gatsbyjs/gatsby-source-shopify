@@ -4,17 +4,25 @@ import { createRemoteFileNode } from "gatsby-source-filesystem";
 // 'gid://shopify/Metafield/6936247730264'
 export const pattern = /^gid:\/\/shopify\/(\w+)\/(.+)$/;
 
-function attachParentId(
-  obj: Record<string, any>,
+export function createNodeId(
+  shopifyId: string,
   gatsbyApi: SourceNodesArgs,
   { typePrefix = "" }: ShopifyPluginOptions
 ) {
-  if (obj.__parentId) {
-    const [fullId, remoteType] = obj.__parentId.match(pattern) || [];
+  return gatsbyApi.createNodeId(`${typePrefix}${shopifyId}`);
+}
+
+function attachParentId(
+  result: BulkResult,
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions
+) {
+  if (result.__parentId) {
+    const [fullId, remoteType] = result.__parentId.match(pattern) || [];
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
-    obj[idField] = gatsbyApi.createNodeId(`${typePrefix}${fullId}`);
-    delete obj.__parentId;
+    result[idField] = createNodeId(fullId, gatsbyApi, pluginOptions);
+    delete result.__parentId;
   }
 }
 
@@ -80,11 +88,13 @@ async function processChildImage(
 }
 
 export const processorMap: ProcessorMap = {
-  LineItem: async (node, gatsbyApi) => {
+  LineItem: async (node, gatsbyApi, pluginOptions) => {
     const lineItem = node;
     if (lineItem.product) {
-      lineItem.productId = gatsbyApi.createNodeId(
-        (lineItem.product as BulkResult).id
+      lineItem.productId = createNodeId(
+        (lineItem.product as BulkResult).id,
+        gatsbyApi,
+        pluginOptions
       );
       delete lineItem.product;
     }
@@ -164,9 +174,7 @@ export function nodeBuilder(
       const node = {
         ...result,
         shopifyId: result.id,
-        id: gatsbyApi.createNodeId(
-          `${pluginOptions.typePrefix || ""}${result.id}`
-        ),
+        id: createNodeId(result.id, gatsbyApi, pluginOptions),
         internal: {
           type: `${pluginOptions.typePrefix || ""}Shopify${remoteType}`,
           contentDigest: gatsbyApi.createContentDigest(result),

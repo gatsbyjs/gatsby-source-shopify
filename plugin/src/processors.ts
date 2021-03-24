@@ -1,10 +1,11 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
-import { pattern as idPattern } from "./node-builder";
+import { pattern as idPattern, createNodeId } from "./node-builder";
 
 export function collectionsProcessor(
   objects: BulkResults,
   builder: NodeBuilder,
-  gatsbyApi: SourceNodesArgs
+  gatsbyApi: SourceNodesArgs,
+  pluginOptions: ShopifyPluginOptions
 ): Promise<NodeInput>[] {
   const promises = [];
 
@@ -27,7 +28,7 @@ export function collectionsProcessor(
          * products all the way up until we get to the parent collection.
          */
         if (siblingRemoteType === `Product`) {
-          productIds.push(gatsbyApi.createNodeId(siblingId));
+          productIds.push(createNodeId(siblingId, gatsbyApi, pluginOptions));
         }
 
         j--;
@@ -43,7 +44,7 @@ export function collectionsProcessor(
 
       const nextSlice = objects.slice(0, j);
       return promises.concat(
-        collectionsProcessor(nextSlice, builder, gatsbyApi)
+        collectionsProcessor(nextSlice, builder, gatsbyApi, pluginOptions)
       );
     } else {
       promises.push(builder.buildNode(result));

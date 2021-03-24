@@ -6,12 +6,16 @@ import {
   PluginOptionsSchemaArgs,
   SourceNodesArgs,
 } from "gatsby";
-import { getGatsbyImageResolver, IGatsbyGraphQLResolverArgumentConfig } from "gatsby-plugin-image/graphql-utils";
 import { makeResolveGatsbyImageData } from "./resolve-gatsby-image-data";
+import {
+  getGatsbyImageResolver,
+  IGatsbyGraphQLResolverArgumentConfig,
+} from "gatsby-plugin-image/graphql-utils";
 import { pluginErrorCodes as errorCodes } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 import { makeSourceFromOperation } from "./make-source-from-operation";
 export { createSchemaCustomization } from "./create-schema-customization";
+import { createNodeId } from "./node-builder";
 
 export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
   return Joi.object({
@@ -94,15 +98,16 @@ async function sourceChangedNodes(
     completedOperation,
     cancelOperationInProgress,
   } = createOperations(pluginOptions, gatsbyApi);
+  const { typePrefix = "" } = pluginOptions;
   const lastBuildTime = new Date(
     gatsbyApi.store.getState().status.plugins?.[
       `gatsby-source-shopify-experimental`
-    ]?.[`lastBuildTime${pluginOptions.typePrefix || ""}`]
+    ]?.[`lastBuildTime${typePrefix}`]
   );
 
   for (const nodeType of shopifyNodeTypes) {
     gatsbyApi
-      .getNodesByType(`${pluginOptions.typePrefix || ""}${nodeType}`)
+      .getNodesByType(`${typePrefix}${nodeType}`)
       .forEach((node) => gatsbyApi.actions.touchNode(node));
   }
 
@@ -137,9 +142,9 @@ async function sourceChangedNodes(
   if (destroyEvents.length) {
     gatsbyApi.reporter.info(`Removing matching nodes from Gatsby`);
     destroyEvents.forEach((e) => {
-      const id = `gid://shopify/${e.subject_type}/${e.subject_id}`;
+      const id = `${typePrefix}gid://shopify/${e.subject_type}/${e.subject_id}`;
       gatsbyApi.reporter.info(`Looking up node with ID: ${id}`);
-      const nodeId = gatsbyApi.createNodeId(id);
+      const nodeId = createNodeId(id, gatsbyApi, pluginOptions);
       const node = gatsbyApi.getNode(nodeId);
 
       if (node) {
@@ -206,9 +211,9 @@ export function createResolvers(
       placeholder: {
         description: "Low resolution version of the image",
         type: "String",
-        defaultValue: null
-      } as IGatsbyGraphQLResolverArgumentConfig
-    }
+        defaultValue: null,
+      } as IGatsbyGraphQLResolverArgumentConfig,
+    };
     const imageNodeTypes = [
       `ShopifyProductImage`,
       `ShopifyProductVariantImage`,
@@ -221,7 +226,10 @@ export function createResolvers(
       (r, nodeType) => ({
         ...r,
         [`${typePrefix}${nodeType}`]: {
-          gatsbyImageData: getGatsbyImageResolver(makeResolveGatsbyImageData(cache), args),
+          gatsbyImageData: getGatsbyImageResolver(
+            makeResolveGatsbyImageData(cache),
+            args
+          ),
         },
       }),
       {}

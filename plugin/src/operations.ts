@@ -21,7 +21,8 @@ export interface ShopifyBulkOperation {
   process: (
     objects: BulkResults,
     nodeBuilder: NodeBuilder,
-    gatsbyApi: SourceNodesArgs
+    gatsbyApi: SourceNodesArgs,
+    pluginOptions: ShopifyPluginOptions
   ) => Promise<NodeInput>[];
 }
 
