@@ -1,6 +1,6 @@
 {
-  "name": "gatsby-source-shopify-experimental",
-  "version": "1.16.2",
+  "name": "gatsby-source-shopify",
+  "version": "5.0.0-rc.x",
   "description": "",
   "scripts": {
     "watch": "tsc-watch --outDir .",

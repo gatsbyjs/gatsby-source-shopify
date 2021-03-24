@@ -1,8 +1,7 @@
 ![ci status](https://github.com/gatsbyjs/gatsby-source-shopify-experimental/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify-experimental/branch/master/graph/badge.svg?token=0YY6FPV3MB)](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify-experimental)
 
-
-# gatsby-source-shopify-experimental
+# gatsby-source-shopify
 
 A scalable solution for sourcing data from Shopify.
 
@@ -17,7 +16,7 @@ This takes you through the minimal steps to see your Shopify data in your Gatsby
 Install this plugin to your Gatsby site.
 
 ```
-npm i gatsby-source-shopify-experimental gatsby-plugin-image
+npm i gatsby-source-shopify@rc gatsby-plugin-image
 ```
 
 ### Configure
@@ -30,14 +29,14 @@ require("dotenv").config();
 module.exports = {
   plugins: [
     {
-      resolve: "gatsby-source-shopify-experimental",
+      resolve: "gatsby-source-shopify",
       options: {
         apiKey: process.env.SHOPIFY_ADMIN_API_KEY,
         password: process.env.SHOPIFY_ADMIN_PASSWORD,
         storeUrl: process.env.SHOPIFY_STORE_URL,
       },
     },
-    "gatsby-plugin-image"
+    "gatsby-plugin-image",
   ],
 };
 ```
@@ -158,21 +157,20 @@ It expects an `image` object that contains the properties `width`, `height` and 
 
 ```jsx
 import { GatsbyImage } from "gatsby-plugin-image";
-import { getShopifyImage } from "gatsby-source-shopify-experimental";
+import { getShopifyImage } from "gatsby-source-shopify";
 
 function CartImage(storefrontProduct) {
   // This is data from Storefront, not from Gatsby
-  const image =  storefrontProduct.images.edges[0].node;
-  const imageData = getShopifyImage({ image, layout: "fixed", width: 200, height: 200 })
+  const image = storefrontProduct.images.edges[0].node;
+  const imageData = getShopifyImage({
+    image,
+    layout: "fixed",
+    width: 200,
+    height: 200,
+  });
 
-  return (
-    <GatsbyImage
-      image={imageData}
-      alt={image.altText}
-    />
-  );
+  return <GatsbyImage image={imageData} alt={image.altText} />;
 }
-
 ```
 
 ### Download up front
@@ -185,7 +183,7 @@ require("dotenv").config();
 module.exports = {
   plugins: [
     {
-      resolve: "gatsby-source-shopify-experimental",
+      resolve: "gatsby-source-shopify",
       options: {
         apiKey: process.env.SHOPIFY_ADMIN_API_KEY,
         password: process.env.SHOPIFY_ADMIN_PASSWORD,
@@ -193,7 +191,7 @@ module.exports = {
         downloadImages: true,
       },
     },
-    "gatsby-plugin-image"
+    "gatsby-plugin-image",
   ],
 };
 ```

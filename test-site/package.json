@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "gatsby": "^3.1.2",
-    "gatsby-source-shopify-experimental": "*",
+    "gatsby-source-shopify": "5.0.0-rc.x",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   }
