@@ -7,7 +7,7 @@ import {
   SourceNodesArgs,
 } from "gatsby";
 import { getGatsbyImageResolver, IGatsbyGraphQLResolverArgumentConfig } from "gatsby-plugin-image/graphql-utils";
-import { resolveGatsbyImageData } from "./resolve-gatsby-image-data";
+import { makeResolveGatsbyImageData } from "./resolve-gatsby-image-data";
 import { pluginErrorCodes as errorCodes } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 import { makeSourceFromOperation } from "./make-source-from-operation";
@@ -198,7 +198,7 @@ export async function sourceNodes(
 }
 
 export function createResolvers(
-  { createResolvers }: CreateResolversArgs,
+  { createResolvers, cache }: CreateResolversArgs,
   { downloadImages, typePrefix = "" }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
@@ -221,7 +221,7 @@ export function createResolvers(
       (r, nodeType) => ({
         ...r,
         [`${typePrefix}${nodeType}`]: {
-          gatsbyImageData: getGatsbyImageResolver(resolveGatsbyImageData, args),
+          gatsbyImageData: getGatsbyImageResolver(makeResolveGatsbyImageData(cache), args),
         },
       }),
       {}

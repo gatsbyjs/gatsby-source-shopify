@@ -1,3 +1,4 @@
+import { fetchRemoteFile } from "gatsby-core-utils";
 import {
   generateImageData,
   getLowResolutionImageURL,
@@ -5,7 +6,7 @@ import {
   IImage,
   ImageFormat,
 } from "gatsby-plugin-image";
-import fetch from "node-fetch"
+import { readFileSync } from "fs";
 import { ShopifyImage, urlBuilder } from "./get-shopify-image";
 
 type ImageLayout = "constrained" | "fixed" | "fullWidth";
@@ -14,9 +15,13 @@ type IImageWithPlaceholder = IImage & {
   placeholder: string
 }
 
-async function getImageBase64({ imageAddress }: { imageAddress: string }): Promise<string> {
-  const response = await fetch(imageAddress)
-  const buffer = await response.buffer();
+async function getImageBase64({ imageAddress, cache }: { imageAddress: string, cache: any }): Promise<string> {
+  // Downloads file to the site cache and returns the file path for the given image (this is a path on the host system, not a URL)
+  const filePath = await fetchRemoteFile({
+    url: imageAddress,
+    cache,
+  })
+  const buffer = readFileSync(filePath)
   return buffer.toString(`base64`)
 }
 
@@ -29,55 +34,73 @@ function getBase64DataURI({ imageBase64 }: { imageBase64: string }) {
   return `data:image/png;base64,${imageBase64}`
 }
 
-export async function resolveGatsbyImageData(
-  image: Node & ShopifyImage,
-  {
-    formats = ["auto"],
-    layout = "constrained",
-    ...options
-  }: { formats: Array<ImageFormat>; layout: ImageLayout }
-) {
-  const remainingOptions = options as Record<string, any>;
-  let [basename] = image.originalSrc.split("?");
-
-  const dot = basename.lastIndexOf(".");
-  let ext = "";
-  if (dot !== -1) {
-    ext = basename.slice(dot + 1);
-    basename = basename.slice(0, dot);
-  }
-
-  const generateImageSource: IGatsbyImageHelperArgs["generateImageSource"] = (
-    filename,
-    width,
-    height,
-    toFormat
-  ): IImageWithPlaceholder => {
-    return {
+export function makeResolveGatsbyImageData(cache: any) {
+  return async function resolveGatsbyImageData(
+    image: Node & ShopifyImage,
+    {
+      formats = ["auto"],
+      layout = "constrained",
+      ...options
+    }: { formats: Array<ImageFormat>; layout: ImageLayout },
+  ) {
+    const remainingOptions = options as Record<string, any>;
+    let [basename] = image.originalSrc.split("?");
+  
+    const dot = basename.lastIndexOf(".");
+    let ext = "";
+    if (dot !== -1) {
+      ext = basename.slice(dot + 1);
+      basename = basename.slice(0, dot);
+    }
+  
+    const generateImageSource: IGatsbyImageHelperArgs["generateImageSource"] = (
+      filename,
       width,
       height,
-      placeholder: ``,
-      format: toFormat,
-      src: urlBuilder({
+      toFormat
+    ): IImageWithPlaceholder => {
+      return {
         width,
         height,
-        baseUrl: filename,
+        placeholder: ``,
         format: toFormat,
-        options: {},
-      }),
+        src: urlBuilder({
+          width,
+          height,
+          baseUrl: filename,
+          format: toFormat,
+          options: {},
+        }),
+      };
     };
-  };
-  const sourceMetadata = {
-    width: image.width,
-    height: image.height,
-    format: ext as ImageFormat,
-  };
-
+    const sourceMetadata = {
+      width: image.width,
+      height: image.height,
+      format: ext as ImageFormat,
+    };
   
-
-  if (remainingOptions && remainingOptions.placeholder === "BLURRED") {
-    // This function returns the URL for a 20px-wide image, to use as a blurred placeholder
-    const lowResImageURL = getLowResolutionImageURL({
+    if (remainingOptions && remainingOptions.placeholder === "BLURRED") {
+      // This function returns the URL for a 20px-wide image, to use as a blurred placeholder
+      const lowResImageURL = getLowResolutionImageURL({
+        ...remainingOptions,
+        formats,
+        layout,
+        sourceMetadata,
+        pluginName: `gatsby-source-shopify-experimental`,
+        filename: image.originalSrc,
+        generateImageSource,
+      })
+      const imageBase64 = await getImageBase64({
+        imageAddress: lowResImageURL,
+        cache,
+      })
+      
+      // This would be your own function to download and generate a low-resolution placeholder
+      remainingOptions.placeholderURL =  await getBase64DataURI({
+        imageBase64,
+      })
+    }
+    return generateImageData({
       ...remainingOptions,
       formats,
       layout,
@@ -85,23 +108,7 @@ export async function resolveGatsbyImageData(
       pluginName: `gatsby-source-shopify-experimental`,
       filename: image.originalSrc,
       generateImageSource,
-    })
-    const imageBase64 = await getImageBase64({
-      imageAddress: lowResImageURL,
-    })
-    
-    // This would be your own function to download and generate a low-resolution placeholder
-    remainingOptions.placeholderURL =  await getBase64DataURI({
-      imageBase64,
-    })
+    });
   }
-  return generateImageData({
-    ...remainingOptions,
-    formats,
-    layout,
-    sourceMetadata,
-    pluginName: `gatsby-source-shopify-experimental`,
-    filename: image.originalSrc,
-    generateImageSource,
-  });
 }
+
