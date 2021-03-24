@@ -96,7 +96,12 @@ export function makeSourceFromOperation(
 
       await Promise.all(
         op
-          .process(objects, nodeBuilder(gatsbyApi, pluginOptions), gatsbyApi)
+          .process(
+            objects,
+            nodeBuilder(gatsbyApi, pluginOptions),
+            gatsbyApi,
+            pluginOptions
+          )
           .map(async (promise) => {
             const node = await promise;
             actions.createNode(node);
