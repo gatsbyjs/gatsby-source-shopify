@@ -102,7 +102,7 @@ export function makeResolveGatsbyImageData(cache: any) {
       });
 
       // This would be your own function to download and generate a low-resolution placeholder
-      remainingOptions.placeholderURL = await getBase64DataURI({
+      remainingOptions.placeholderURL = getBase64DataURI({
         imageBase64,
       });
     }
