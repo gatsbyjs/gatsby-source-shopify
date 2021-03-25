@@ -25,4 +25,3 @@ jobs:
           token: ${{ secrets.NPM_TOKEN }}
           tag: rc
           package: ./plugin/package.json
-          dry-run: true
