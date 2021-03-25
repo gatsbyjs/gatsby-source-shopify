@@ -105,13 +105,13 @@ export function makeSourceFromOperation(
           return grouping;
         }, {});
 
-        const outpout = Object.entries(nodeTypeCounts)
+        const output = Object.entries(nodeTypeCounts)
           .map(([remoteType, count]) => {
             return `${remoteType}: ${count} results`;
           })
           .join("\n");
 
-        reporter.info(outpout);
+        reporter.info(output);
       }
 
       await Promise.all(
