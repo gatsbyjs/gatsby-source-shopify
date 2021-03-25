@@ -126,39 +126,61 @@ export function createOperations(
    */
   async function completedOperation(
     operationId: string,
+    nodeStatsChangedCallback: (node: BulkOperationNode) => void,
     interval = 1000
   ): Promise<{ node: BulkOperationNode }> {
-    const operation = await client.request<{
-      node: BulkOperationNode;
-    }>(OPERATION_BY_ID, {
-      id: operationId,
-    });
+    let operation = await client.request<{
+        node: BulkOperationNode;
+      }>(OPERATION_BY_ID, {
+        id: operationId,
+      });
 
-    if (options.verboseLogging) {
-      reporter.verbose(`
-        Waiting for operation to complete
+    nodeStatsChangedCallback(operation.node);
+    
+    while (true) {
+      if (options.verboseLogging) {
+        reporter.verbose(`
+          Waiting for operation to complete
 
-        ${operationId}
+          ${operationId}
 
-        Status: ${operation.node.status}
+          Status: ${operation.node.status}
 
-        Object count: ${operation.node.objectCount}
+          Object count: ${operation.node.objectCount}
 
-        Url: ${operation.node.url}
-      `);
+          Url: ${operation.node.url}
+        `);
+      }
+
+      if (failedStatuses.includes(operation.node.status)) {
+        throw new OperationError(operation.node);
+      }
+
+      if (operation.node.status === "COMPLETED") {
+        return operation;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, interval));
+
+      const nextOperation = await client.request<{
+        node: BulkOperationNode;
+      }>(OPERATION_BY_ID, {
+        id: operationId,
+      });
+
+      const operationNodeFields = Object.keys(operation.node) as (keyof BulkOperationNode)[];
+      let updated: boolean = false;
+
+      operationNodeFields.forEach(field => {
+        if (nextOperation.node[field] !== operation.node[field]) {
+          updated = true;
+        };
+      });
+
+      if (updated) nodeStatsChangedCallback(nextOperation.node);
+
+      operation = nextOperation;
     }
-
-    if (failedStatuses.includes(operation.node.status)) {
-      throw new OperationError(operation.node);
-    }
-
-    if (operation.node.status === "COMPLETED") {
-      return operation;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, interval));
-
-    return completedOperation(operationId, interval);
   }
 
   return {
