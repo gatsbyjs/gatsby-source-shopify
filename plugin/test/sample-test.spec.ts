@@ -41,7 +41,7 @@ test("Sample test", async () => {
     args()
   );
 
-  const resp = await operations.completedOperation(`12345`);
+  const resp = await operations.completedOperation(`12345`, () => {});
 
   expect(resp.node.status).toEqual(`COMPLETED`);
   expect(resp.node.id).toEqual(`12345`);
