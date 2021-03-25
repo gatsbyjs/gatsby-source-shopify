@@ -20,8 +20,7 @@ jobs:
       - name: Set the publish version
         run: npm version ${GITHUB_REF#refs/tags/v}
         working-directory: ./plugin
-      - name: Publish
-        run: npm publish --tag rc
-        working-directory: ./plugin
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          tag: rc
