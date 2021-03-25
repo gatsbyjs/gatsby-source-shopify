@@ -89,6 +89,7 @@ export function makeResolveGatsbyImageData(cache: any) {
       // This function returns the URL for a 20px-wide image, to use as a blurred placeholder
       const lowResImageURL = getLowResolutionImageURL({
         ...remainingOptions,
+        aspectRatio: (remainingOptions.width/remainingOptions.height), // Workaround - fixes height being NaN; we can remove this once gatsby-plugin-image is fixed
         formats,
         layout,
         sourceMetadata,
