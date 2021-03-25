@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import { SourceNodesArgs } from "gatsby";
 import { createInterface } from "readline";
 
-import { nodeBuilder } from "./node-builder";
+import { nodeBuilder, pattern as idPattern } from "./node-builder";
 import { ShopifyBulkOperation } from "./operations";
 import { OperationError, pluginErrorCodes as errorCodes } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
@@ -92,6 +92,26 @@ export function makeSourceFromOperation(
 
       for await (const line of rl) {
         objects.push(JSON.parse(line));
+      }
+
+      if (pluginOptions.debugMode) {
+        const nodeTypeCounts = objects.reduce((grouping, object) => {
+          const [, remoteType] = object.id.match(idPattern);
+          if (!grouping[remoteType]) {
+            grouping[remoteType] = 0;
+          }
+
+          grouping[remoteType]++;
+          return grouping;
+        }, {});
+
+        const output = Object.entries(nodeTypeCounts)
+          .map(([remoteType, count]) => {
+            return `${remoteType}: ${count} results`;
+          })
+          .join("\n");
+
+        reporter.info(output);
       }
 
       await Promise.all(
