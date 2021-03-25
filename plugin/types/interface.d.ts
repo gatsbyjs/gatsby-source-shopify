@@ -4,6 +4,7 @@ interface ShopifyPluginOptions {
   storeUrl: string;
   downloadImages?: boolean;
   verboseLogging?: boolean;
+  debugMode?: boolean;
   shopifyConnections?: string[];
   typePrefix?: string;
 }
