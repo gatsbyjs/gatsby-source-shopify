@@ -23,7 +23,8 @@
     "gatsby-core-utils": "^2.1.0",
     "gatsby-source-filesystem": "^3.1.0",
     "node-fetch": "^2.6.1",
-    "sharp": "^0.27.2"
+    "sharp": "^0.27.2",
+    "shift-left": "^0.1.5"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
