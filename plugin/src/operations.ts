@@ -168,14 +168,7 @@ export function createOperations(
         id: operationId,
       });
 
-      const operationNodeFields = Object.keys(operation.node) as (keyof BulkOperationNode)[];
-      let updated: boolean = false;
-
-      operationNodeFields.forEach(field => {
-        if (nextOperation.node[field] !== operation.node[field]) {
-          updated = true;
-        };
-      });
+      const updated: boolean = JSON.stringify(operation.node) !== JSON.stringify(nextOperation.node);
 
       if (updated) nodeStatsChangedCallback(nextOperation.node);
 
