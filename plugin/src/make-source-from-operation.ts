@@ -164,6 +164,7 @@ export function makeSourceFromOperation(
         });
       }
 
+      console.error("Unexpected error encountered: ", e);
       reporter.panic({
         id: errorCodes.unknownSourcingFailure,
         context: {
