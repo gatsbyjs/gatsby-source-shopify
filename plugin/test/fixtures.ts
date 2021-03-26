@@ -27,18 +27,26 @@ export function currentBulkOperation(status: BulkOperationStatus) {
   };
 }
 
-export const startOperation = graphql.mutation<BulkOperationRunQueryResponse>(
-  "INITIATE_BULK_OPERATION",
-  resolve({
-    bulkOperationRunQuery: {
-      bulkOperation: {
-        id: "",
-        objectCount: "0",
-        query: "",
-        status: "CREATED",
-        url: "",
+type BulkNodeOverrides = {
+  [key in keyof BulkOperationNode]?: BulkOperationNode[key];
+};
+
+export const startOperation = (overrides: BulkNodeOverrides = {}) => {
+  const { id = "12345" } = overrides;
+
+  return graphql.mutation<BulkOperationRunQueryResponse>(
+    "INITIATE_BULK_OPERATION",
+    resolve({
+      bulkOperationRunQuery: {
+        bulkOperation: {
+          id,
+          objectCount: "0",
+          query: "",
+          status: "CREATED",
+          url: "",
+        },
+        userErrors: [],
       },
-      userErrors: [],
-    },
-  })
-);
+    })
+  );
+};
