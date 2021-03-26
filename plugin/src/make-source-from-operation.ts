@@ -4,7 +4,11 @@ import { createInterface } from "readline";
 
 import { nodeBuilder, pattern as idPattern } from "./node-builder";
 import { ShopifyBulkOperation } from "./operations";
-import { OperationError, pluginErrorCodes as errorCodes } from "./errors";
+import {
+  OperationError,
+  HttpError,
+  pluginErrorCodes as errorCodes,
+} from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 
 export function makeSourceFromOperation(
@@ -164,7 +168,18 @@ export function makeSourceFromOperation(
         });
       }
 
-      console.error("Unexpected error encountered: ", e);
+      if (e instanceof HttpError) {
+        reporter.panic({
+          id: errorCodes.unknownApiError,
+          context: {
+            sourceMessage: `Received error ${
+              e.response.status
+            } from Shopify: ${await e.response.text()}`,
+          },
+          error: e,
+        });
+      }
+
       reporter.panic({
         id: errorCodes.unknownSourcingFailure,
         context: {
