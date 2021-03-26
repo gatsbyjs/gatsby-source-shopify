@@ -262,5 +262,10 @@ export function onPreInit({ reporter }: NodePluginArgs) {
       level: "ERROR",
       category: `THIRD_PARTY`,
     },
+    [errorCodes.unknownApiError]: {
+      text: getErrorText,
+      level: "ERROR",
+      category: `THIRD_PARTY`,
+    },
   });
 }
