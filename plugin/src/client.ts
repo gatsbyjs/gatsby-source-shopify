@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { HttpError } from "./errors";
 
 const adminUrl = (options: ShopifyPluginOptions) =>
   `https://${options.apiKey}:${options.password}@${options.storeUrl}/admin/api/2021-01/graphql.json`;
@@ -31,7 +32,7 @@ export function createClient(options: ShopifyPluginOptions) {
         return graphqlFetch(query, variables, retries + 1);
       }
 
-      throw response;
+      throw new HttpError(response);
     }
 
     const json = await response.json();
