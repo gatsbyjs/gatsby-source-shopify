@@ -1,6 +1,7 @@
 import { graphql, rest } from "msw";
 import { setupServer } from "msw/node";
 import { SourceNodesArgs } from "gatsby";
+import { shiftLeft } from "shift-left";
 
 import { makeSourceFromOperation } from "../src/make-source-from-operation";
 import { createOperations } from "../src/operations";
@@ -34,6 +35,100 @@ afterAll(() => {
   server.close();
 });
 
+describe("When polling an operation", () => {
+  const id = "54321";
+
+  beforeEach(() => {
+    server.use(
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolveOnce(currentBulkOperation("COMPLETED"))
+      ),
+      startOperation({ id }),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolveOnce({
+          node: {
+            status: `CREATED`,
+            id: "",
+            objectCount: "0",
+            query: "",
+            url: "",
+          },
+        })
+      ),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "12345",
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
+      ),
+      rest.get("http://results.url", (_req, res, ctx) => {
+        return res(
+          ctx.text(JSON.stringify({ id: "gid://shopify/Product/12345" }))
+        );
+      })
+    );
+  });
+
+  it("reports status changes", async () => {
+    const setStatus = jest.fn();
+    const gatsbyApiMock = jest.fn().mockImplementation(() => {
+      return {
+        cache: {
+          set: jest.fn(),
+        },
+        actions: {
+          createNode: jest.fn(),
+        },
+        createContentDigest: jest.fn(),
+        createNodeId: jest.fn(),
+        reporter: {
+          info: jest.fn(),
+          error: jest.fn(),
+          panic: jest.fn(),
+          activityTimer: () => ({
+            start: jest.fn(),
+            end: jest.fn(),
+            setStatus,
+          }),
+        },
+      };
+    });
+
+    const gatsbyApi = gatsbyApiMock as jest.Mock<SourceNodesArgs>;
+    const options = {
+      apiKey: ``,
+      password: ``,
+      storeUrl: "my-shop.shopify.com",
+      downloadImages: true,
+    };
+    const operations = createOperations(options, gatsbyApi());
+
+    const sourceFromOperation = makeSourceFromOperation(
+      operations.finishLastOperation,
+      operations.completedOperation,
+      operations.cancelOperationInProgress,
+      gatsbyApi(),
+      options
+    );
+
+    await sourceFromOperation(operations.createProductsOperation);
+
+    expect(setStatus).toHaveBeenCalledWith(shiftLeft`
+      Polling bulk operation: ${id}
+      Status: COMPLETED
+      Object count: 1
+    `);
+  });
+});
+
 describe("When downloading images", () => {
   const bulkResult = {
     id: "gid://shopify/Product/12345",
@@ -52,7 +147,7 @@ describe("When downloading images", () => {
         "OPERATION_STATUS",
         resolveOnce(currentBulkOperation("COMPLETED"))
       ),
-      startOperation,
+      startOperation(),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({
@@ -158,7 +253,7 @@ describe("A production build", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("CANCELED"))
       ),
-      startOperation,
+      startOperation(),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({
@@ -235,7 +330,7 @@ describe("When an operation gets canceled", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("COMPLETED"))
       ),
-      startOperation,
+      startOperation(),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolveOnce({
@@ -322,7 +417,7 @@ describe("When an operation fails with bad credentials", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("COMPLETED"))
       ),
-      startOperation,
+      startOperation(),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({

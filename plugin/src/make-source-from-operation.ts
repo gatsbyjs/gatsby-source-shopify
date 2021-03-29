@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
 import { SourceNodesArgs } from "gatsby";
 import { createInterface } from "readline";
+import { shiftLeft } from "shift-left";
 
 import { nodeBuilder, pattern as idPattern } from "./node-builder";
 import { ShopifyBulkOperation } from "./operations";
@@ -11,9 +12,10 @@ import {
 } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 
+
 export function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
-  completedOperation: (id: string) => Promise<{ node: BulkOperationNode }>,
+  completedOperation: (id: string, callback: (node: BulkOperationNode) => void) => Promise<{ node: BulkOperationNode }>,
   cancelOperationInProgress: () => Promise<void>,
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
@@ -62,12 +64,17 @@ export function makeSourceFromOperation(
         );
       }
 
-      operationTimer.setStatus(
-        `Polling bulk operation ${op.name}: ${bulkOperation.id}`
-      );
-      await cache.set(cacheKey, bulkOperation.id);
+      const updateStatus = (operationStats: BulkOperationNode) => {
+        operationTimer.setStatus(shiftLeft`
+          Polling bulk operation: ${bulkOperation.id}
+          Status: ${operationStats.status}
+          Object count: ${operationStats.objectCount}
+        `);
+      }
 
-      let resp = await completedOperation(bulkOperation.id);
+      await cache.set(cacheKey, bulkOperation.id);
+      
+      let resp = await completedOperation(bulkOperation.id, updateStatus);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
 
       if (parseInt(resp.node.objectCount, 10) === 0) {
