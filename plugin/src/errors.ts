@@ -12,8 +12,10 @@ export class OperationError extends Error {
   constructor(node: BulkOperationNode) {
     const { errorCode, id } = node;
     super(`Operation ${id} failed with ${errorCode}`);
-    Object.setPrototypeOf(this, OperationError.prototype);
+
     this.node = node;
+    
+    Error.captureStackTrace(this, OperationError);
   }
 }
 
@@ -22,7 +24,9 @@ export class HttpError extends Error {
 
   constructor(response: Response) {
     super(response.statusText);
-    Object.setPrototypeOf(this, HttpError.prototype);
+
     this.response = response;
+
+    Error.captureStackTrace(this, HttpError);
   }
 }
