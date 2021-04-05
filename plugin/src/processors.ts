@@ -37,12 +37,6 @@ export function collectionsProcessor(
         const [siblingId, siblingRemoteType] =
           objects[j].id.match(idPattern) || [];
 
-        if (pluginOptions.debugMode) {
-          console.info(
-            `Processing collection ${result.__parentId} child node ${objects[j].id}`
-          );
-        }
-
         if (siblingRemoteType === `Product`) {
           productIds.push(createNodeId(siblingId, gatsbyApi, pluginOptions));
         }
@@ -57,22 +51,10 @@ export function collectionsProcessor(
 
       const nextSlice = objects.slice(0, j);
 
-      if (pluginOptions.debugMode) {
-        console.info(
-          `Ready to create collection '${collection.title}' with child product IDs:`,
-          collection.productIds
-        );
-      }
-
       return promises.concat(
         collectionsProcessor(nextSlice, builder, gatsbyApi, pluginOptions)
       );
     } else {
-      if (pluginOptions.debugMode) {
-        console.info(
-          `Ready to create collection '${result.title}' with no child products`
-        );
-      }
       promises.push(builder.buildNode(result));
     }
   }
