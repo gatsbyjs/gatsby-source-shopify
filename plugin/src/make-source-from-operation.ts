@@ -12,10 +12,12 @@ import {
 } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 
-
 export function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
-  completedOperation: (id: string, callback: (node: BulkOperationNode) => void) => Promise<{ node: BulkOperationNode }>,
+  completedOperation: (
+    id: string,
+    callback: (node: BulkOperationNode) => void
+  ) => Promise<{ node: BulkOperationNode }>,
   cancelOperationInProgress: () => Promise<void>,
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
@@ -70,10 +72,10 @@ export function makeSourceFromOperation(
           Status: ${operationStats.status}
           Object count: ${operationStats.objectCount}
         `);
-      }
+      };
 
       await cache.set(cacheKey, bulkOperation.id);
-      
+
       let resp = await completedOperation(bulkOperation.id, updateStatus);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
 
@@ -86,6 +88,10 @@ export function makeSourceFromOperation(
       operationTimer.setStatus(
         `Fetching ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
       );
+
+      if (pluginOptions.debugMode) {
+        console.info(`Fetching results for ${op.name} at ${resp.node.url}`);
+      }
 
       const results = await fetch(resp.node.url);
 
