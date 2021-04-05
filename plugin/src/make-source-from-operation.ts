@@ -3,7 +3,7 @@ import { SourceNodesArgs } from "gatsby";
 import { createInterface } from "readline";
 import { shiftLeft } from "shift-left";
 
-import { nodeBuilder, pattern as idPattern } from "./node-builder";
+import { nodeBuilder } from "./node-builder";
 import { ShopifyBulkOperation } from "./operations";
 import {
   OperationError,
@@ -89,10 +89,6 @@ export function makeSourceFromOperation(
         `Fetching ${resp.node.objectCount} results for ${op.name}: ${bulkOperation.id}`
       );
 
-      if (pluginOptions.debugMode) {
-        console.info(`Fetching results for ${op.name} at ${resp.node.url}`);
-      }
-
       const results = await fetch(resp.node.url);
 
       operationTimer.setStatus(
@@ -109,26 +105,6 @@ export function makeSourceFromOperation(
 
       for await (const line of rl) {
         objects.push(JSON.parse(line));
-      }
-
-      if (pluginOptions.debugMode) {
-        const nodeTypeCounts = objects.reduce((grouping, object) => {
-          const [, remoteType] = object.id.match(idPattern);
-          if (!grouping[remoteType]) {
-            grouping[remoteType] = 0;
-          }
-
-          grouping[remoteType]++;
-          return grouping;
-        }, {});
-
-        const output = Object.entries(nodeTypeCounts)
-          .map(([remoteType, count]) => {
-            return `${remoteType}: ${count} results`;
-          })
-          .join("\n");
-
-        reporter.info(output);
       }
 
       await Promise.all(
