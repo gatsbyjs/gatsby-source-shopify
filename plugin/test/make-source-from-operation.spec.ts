@@ -35,6 +35,136 @@ afterAll(() => {
   server.close();
 });
 
+describe("The collections operation", () => {
+  const firstId = "gid://shopify/Collection/12345";
+  const secondId = "gid://shopify/Collection/54321";
+  const firstProductId = "gid://shopify/Product/22345";
+  const secondProductId = "gid://shopify/Product/32345";
+  const thirdProductId = "gid://shopify/Product/64321";
+
+  const bulkResults = [
+    {
+      id: firstId,
+    },
+    {
+      id: firstProductId,
+      __parentId: firstId,
+    },
+    {
+      id: secondId,
+    },
+    {
+      id: secondProductId,
+      __parentId: firstId,
+    },
+    {
+      id: thirdProductId,
+      __parentId: secondId,
+    },
+  ];
+
+  beforeEach(() => {
+    server.use(
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolveOnce(currentBulkOperation("COMPLETED"))
+      ),
+      startOperation(),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolveOnce({
+          node: {
+            status: `CREATED`,
+            id: "",
+            objectCount: "0",
+            query: "",
+            url: "",
+          },
+        })
+      ),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "12345",
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
+      ),
+      rest.get("http://results.url", (_req, res, ctx) => {
+        return res(
+          ctx.text(bulkResults.map((r) => JSON.stringify(r)).join("\n"))
+        );
+      })
+    );
+  });
+
+  it("attaches product IDs to collection nodes", async () => {
+    const createNode = jest.fn();
+    const createNodeId = jest.fn().mockImplementation((id) => id);
+
+    const gatsbyApiMock = jest.fn().mockImplementation(() => {
+      return {
+        cache: {
+          set: jest.fn(),
+        },
+        actions: {
+          createNode,
+        },
+        createContentDigest: jest.fn(),
+        createNodeId,
+        reporter: {
+          info: jest.fn(),
+          error: jest.fn(),
+          panic: jest.fn(),
+          activityTimer: () => ({
+            start: jest.fn(),
+            end: jest.fn(),
+            setStatus: jest.fn(),
+          }),
+        },
+      };
+    });
+
+    const gatsbyApi = gatsbyApiMock as jest.Mock<SourceNodesArgs>;
+    const options = {
+      apiKey: ``,
+      password: ``,
+      storeUrl: "my-shop.shopify.com",
+      downloadImages: true,
+    };
+    const operations = createOperations(options, gatsbyApi());
+
+    const sourceFromOperation = makeSourceFromOperation(
+      operations.finishLastOperation,
+      operations.completedOperation,
+      operations.cancelOperationInProgress,
+      gatsbyApi(),
+      options
+    );
+
+    await sourceFromOperation(operations.createCollectionsOperation);
+
+    expect(createNode).toHaveBeenCalledTimes(2);
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstId,
+        productIds: expect.arrayContaining([firstProductId, secondProductId]),
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondId,
+        productIds: expect.arrayContaining([thirdProductId]),
+      })
+    );
+  });
+});
+
 describe("When polling an operation", () => {
   const id = "54321";
 
