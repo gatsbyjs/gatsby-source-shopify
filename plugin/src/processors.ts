@@ -36,9 +36,8 @@ export function collectionsProcessor(
     }
 
     if (remoteType == `Collection`) {
-      const collection = objects[i];
-      collection.productIds = collectionProductIndex[result.id] || [];
-      promises.push(builder.buildNode(collection));
+      result.productIds = collectionProductIndex[result.id] || [];
+      promises.push(builder.buildNode(result));
     }
   }
 
