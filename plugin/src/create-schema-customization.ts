@@ -105,6 +105,8 @@ export function createSchemaCustomization(
     }
   );
 
+  productImageDef.config.interfaces = ["Node"];
+
   if (includeCollections) {
     addFields(productDef, {
       collections: {
