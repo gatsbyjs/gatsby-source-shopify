@@ -8,6 +8,7 @@ export function collectionsProcessor(
   pluginOptions: ShopifyPluginOptions
 ): Promise<NodeInput>[] {
   const promises = [];
+  const collectionProductIndex: { [collectionId: string]: string[] } = {};
 
   /**
    * Read results in reverse so we can collect child node IDs.
@@ -17,44 +18,25 @@ export function collectionsProcessor(
    */
   for (let i = objects.length - 1; i >= 0; i--) {
     const result = objects[i];
-    const [, remoteType] = result.id.match(idPattern) || [];
-    if (remoteType !== `Collection`) {
+    const [id, remoteType] = result.id.match(idPattern) || [];
+    if (remoteType === `Product`) {
       /**
-       * Collect product node IDs until we get to the parent collection.
-       * This is necessary for many-to-many relationships, like the
-       * products connection, which is currently the only connection
-       * we are requesting.
-       *
-       * One-to-many relationships wouldn't need this,
-       * e.g. if the remote type is a metafield we can just create a
-       * metafield node with a collectionId.
-       *
+       * We source products in a separate operation. Here we are
+       * just collecting product IDs so we can tell Gatsby about
+       * the many-to-many relationship between collections and
+       * products.
        */
-      const productIds = [];
-      let j = i;
-
-      while (objects[j].id !== result.__parentId) {
-        const [siblingId, siblingRemoteType] =
-          objects[j].id.match(idPattern) || [];
-
-        if (siblingRemoteType === `Product`) {
-          productIds.push(createNodeId(siblingId, gatsbyApi, pluginOptions));
-        }
-
-        j--;
+      if (!collectionProductIndex[result.__parentId]) {
+        collectionProductIndex[result.__parentId] = [];
       }
 
-      const collection = objects[j];
-
-      collection.productIds = productIds;
-      promises.push(builder.buildNode(collection));
-
-      const nextSlice = objects.slice(0, j);
-
-      return promises.concat(
-        collectionsProcessor(nextSlice, builder, gatsbyApi, pluginOptions)
+      collectionProductIndex[result.__parentId].push(
+        createNodeId(id, gatsbyApi, pluginOptions)
       );
-    } else {
+    }
+
+    if (remoteType == `Collection`) {
+      result.productIds = collectionProductIndex[result.id] || [];
       promises.push(builder.buildNode(result));
     }
   }
