@@ -291,19 +291,38 @@ const productsQuery = (dateString?: string) => {
             variants {
               edges {
                 node {
-                  id
-                  storefrontId
                   availableForSale
+                  barcode
                   compareAtPrice
+                  createdAt
+                  displayName
+                  id
+                  image {
+                    id
+                    altText
+                    height
+                    width
+                    originalSrc
+                    transformedSrc
+                  }
                   inventoryPolicy
                   inventoryQuantity
+                  legacyResourceId
+                  position
                   price
                   selectedOptions {
                     name
                     value
                   }
+                  sellingPlanGroupCount
                   sku
+                  storefrontId
+                  taxCode
+                  taxable
                   title
+                  updatedAt
+                  weight
+                  weightUnit
                   metafields {
                     edges {
                       node {
@@ -315,14 +334,6 @@ const productsQuery = (dateString?: string) => {
                         valueType
                       }
                     }
-                  }
-                  image {
-                    id
-                    altText
-                    height
-                    width
-                    originalSrc
-                    transformedSrc
                   }
                 }
               }
