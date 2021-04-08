@@ -1,4 +1,55 @@
-import { CreateSchemaCustomizationArgs } from "gatsby";
+import {
+  CreateSchemaCustomizationArgs,
+  NodePluginSchema,
+  GatsbyGraphQLObjectType,
+} from "gatsby";
+
+function addFields(
+  def: GatsbyGraphQLObjectType,
+  fields: GatsbyGraphQLObjectType["config"]["fields"]
+) {
+  def.config.fields = {
+    ...(def.config.fields || {}),
+    ...fields,
+  };
+}
+
+function defineImageNode(
+  name: string,
+  schema: NodePluginSchema,
+  pluginOptions: ShopifyPluginOptions,
+  fields: GatsbyGraphQLObjectType["config"]["fields"] = {}
+) {
+  const imageDef = schema.buildObjectType({
+    name,
+    extensions: {
+      dontInfer: {},
+    },
+  });
+
+  if (pluginOptions.downloadImages) {
+    imageDef.config.fields = {
+      localFile: {
+        type: "File",
+        extensions: {
+          link: {},
+        },
+      },
+    };
+  }
+
+  addFields(imageDef, {
+    ...fields,
+    altText: "String",
+    height: "Int",
+    id: "String",
+    originalSrc: "String!",
+    transformedSrc: "String!",
+    width: "Int",
+  });
+
+  return imageDef;
+}
 
 export function createSchemaCustomization(
   { actions, schema }: CreateSchemaCustomizationArgs,
@@ -37,9 +88,11 @@ export function createSchemaCustomization(
     interfaces: ["Node"],
   });
 
-  const productImageDef = schema.buildObjectType({
-    name: name("ShopifyProductImage"),
-    fields: {
+  const productImageDef = defineImageNode(
+    name("ShopifyProductImage"),
+    schema,
+    pluginOptions,
+    {
       product: {
         type: name("ShopifyProduct!"),
         extensions: {
@@ -49,29 +102,23 @@ export function createSchemaCustomization(
           },
         },
       },
-    },
-    interfaces: ["Node"],
-  });
+    }
+  );
 
-  if (pluginOptions.downloadImages && productImageDef.config.fields) {
-    productImageDef.config.fields.localFile = {
-      type: "File",
-      extensions: {
-        link: {},
-      },
-    };
-  }
+  productImageDef.config.interfaces = ["Node"];
 
-  if (includeCollections && productDef.config.fields) {
-    productDef.config.fields.collections = {
-      type: `[${name("ShopifyCollection")}]`,
-      extensions: {
-        link: {
-          from: "id",
-          by: "productIds",
+  if (includeCollections) {
+    addFields(productDef, {
+      collections: {
+        type: `[${name("ShopifyCollection")}]`,
+        extensions: {
+          link: {
+            from: "id",
+            by: "productIds",
+          },
         },
       },
-    };
+    });
   }
 
   const typeDefs = [
@@ -188,50 +235,18 @@ export function createSchemaCustomization(
     );
   }
 
-  if (pluginOptions.downloadImages) {
-    typeDefs.push(
-      schema.buildObjectType({
-        name: name("ShopifyProductFeaturedImage"),
-        fields: {
-          localFile: {
-            type: "File",
-            extensions: {
-              link: {},
-            },
-          },
-        },
-        interfaces: ["Node"],
-      }),
-      schema.buildObjectType({
-        name: name("ShopifyProductFeaturedMediaPreviewImage"),
-        fields: {
-          localFile: {
-            type: "File",
-            extensions: {
-              link: {},
-            },
-          },
-        },
-        interfaces: ["Node"],
-      })
-    );
+  typeDefs.push(
+    ...[
+      "ShopifyProductFeaturedImage",
+      "ShopifyProductFeaturedMediaPreviewImage",
+      "ShopifyProductVariantImage",
+    ].map((typeName) => defineImageNode(name(typeName), schema, pluginOptions))
+  );
 
-    if (includeCollections) {
-      typeDefs.push(
-        schema.buildObjectType({
-          name: name("ShopifyCollectionImage"),
-          fields: {
-            localFile: {
-              type: "File",
-              extensions: {
-                link: {},
-              },
-            },
-          },
-          interfaces: ["Node"],
-        })
-      );
-    }
+  if (includeCollections) {
+    typeDefs.push(
+      defineImageNode(name("ShopifyCollectionImage"), schema, pluginOptions)
+    );
   }
 
   actions.createTypes(typeDefs);

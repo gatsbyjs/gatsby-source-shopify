@@ -204,7 +204,11 @@ export async function sourceNodes(
 
 export function createResolvers(
   { createResolvers, cache }: CreateResolversArgs,
-  { downloadImages, typePrefix = "" }: ShopifyPluginOptions
+  {
+    downloadImages,
+    typePrefix = "",
+    shopifyConnections = [],
+  }: ShopifyPluginOptions
 ) {
   if (!downloadImages) {
     const args = {
@@ -218,9 +222,12 @@ export function createResolvers(
       `ShopifyProductImage`,
       `ShopifyProductVariantImage`,
       `ShopifyProductFeaturedImage`,
-      `ShopifyCollectionImage`,
       `ShopifyProductFeaturedMediaPreviewImage`,
     ];
+
+    if (shopifyConnections.includes("collections")) {
+      imageNodeTypes.push("ShopifyCollectionImage");
+    }
 
     const resolvers = imageNodeTypes.reduce(
       (r, nodeType) => ({
