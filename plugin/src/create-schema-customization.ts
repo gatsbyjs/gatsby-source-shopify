@@ -22,9 +22,6 @@ function defineImageNode(
 ) {
   const imageDef = schema.buildObjectType({
     name,
-    extensions: {
-      dontInfer: {},
-    },
   });
 
   if (pluginOptions.downloadImages) {
