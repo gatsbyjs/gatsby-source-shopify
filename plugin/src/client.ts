@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 import { HttpError } from "./errors";
 
 const adminUrl = (options: ShopifyPluginOptions) =>
-  `https://${options.apiKey}:${options.password}@${options.storeUrl}/admin/api/2021-01/graphql.json`;
+  `https://@${options.storeUrl}/admin/api/2021-01/graphql.json`;
 
 const MAX_BACKOFF_MILLISECONDS = 60000;
 
@@ -18,6 +18,7 @@ export function createClient(options: ShopifyPluginOptions) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Shopify-Access-Token": options.password,
       },
       body: JSON.stringify({
         query,

@@ -25,7 +25,7 @@ export function eventsApi(options: ShopifyPluginOptions) {
         const pageLinks: { url: string; rel: string }[] = paginationInfo
           .split(",")
           .map((pageData: string) => {
-            const [url, rel] = pageData.match(/<(.*)>; rel="(.*)"/) || ["", ""];
+            const [, url, rel] = pageData.match(/<(.*)>; rel="(.*)"/) || [];
             return {
               url,
               rel,
