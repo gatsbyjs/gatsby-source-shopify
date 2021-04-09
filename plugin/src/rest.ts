@@ -1,26 +1,30 @@
 import fetch, { Response } from "node-fetch";
 
 const getBaseUrl = (options: ShopifyPluginOptions) =>
-  `https://${options.apiKey}:${options.password}@${options.storeUrl}/admin/api/2021-01`;
+  `https://${options.storeUrl}/admin/api/2021-01`;
 
 export function makeShopifyFetch(options: ShopifyPluginOptions) {
   const baseUrl = getBaseUrl(options);
 
-  function authenticatedUrl(urlString: string) {
-    const url = new URL(urlString);
-    return url
-      .toString()
-      .replace(url.host, `${options.apiKey}:${options.password}@${url.host}`);
-  }
-
   async function shopifyFetch(
     path: string,
-    fetchOptions = {},
+    fetchOptions = {
+      headers: {
+        "X-Shopify-Access-Token": options.password,
+      },
+    },
     retries = 3
   ): Promise<Response> {
-    const url = path.includes(options.storeUrl)
-      ? authenticatedUrl(path)
-      : `${baseUrl}${path}`;
+    /**
+     * This is kind of a hack, but...
+     *
+     * We do this because although callers will use a relative path,
+     * some responses might have pagination links that get fed back
+     * to shopifyFetch to retrieve the next page. Those links are
+     * absolute URLs so we account for both, but not in a very robust
+     * fashion.
+     */
+    const url = path.includes(options.storeUrl) ? path : `${baseUrl}${path}`;
 
     const resp = await fetch(url, fetchOptions);
 
@@ -30,7 +34,7 @@ export function makeShopifyFetch(options: ShopifyPluginOptions) {
           // rate limit
           const retryAfter = parseFloat(resp.headers.get("Retry-After") || "");
           await new Promise((resolve) => setTimeout(resolve, retryAfter));
-          return shopifyFetch(path, options, retries - 1);
+          return shopifyFetch(path, fetchOptions, retries - 1);
         }
       }
     }
@@ -38,5 +42,5 @@ export function makeShopifyFetch(options: ShopifyPluginOptions) {
     return resp;
   }
 
-  return shopifyFetch;
+  return async (path: string) => shopifyFetch(path);
 }

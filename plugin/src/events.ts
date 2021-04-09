@@ -11,7 +11,7 @@ export function eventsApi(options: ShopifyPluginOptions) {
   return {
     async fetchDestroyEventsSince(date: Date): Promise<Event[]> {
       let resp = await shopifyFetch(
-        `/events.json?limit=250&verb=destroy&created_at_min=${date.toISOString()}`
+        `/events.json?limit=1&verb=destroy&created_at_min=${date.toISOString()}`
       );
 
       const { events } = await resp.json();
@@ -25,7 +25,10 @@ export function eventsApi(options: ShopifyPluginOptions) {
         const pageLinks: { url: string; rel: string }[] = paginationInfo
           .split(",")
           .map((pageData: string) => {
-            const [url, rel] = pageData.match(/<(.*)>; rel="(.*)"/) || ["", ""];
+            const [, url, rel] = pageData.match(/<(.*)>; rel="(.*)"/) || [
+              "",
+              "",
+            ];
             return {
               url,
               rel,
