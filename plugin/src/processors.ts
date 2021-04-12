@@ -30,7 +30,7 @@ export function collectionsProcessor(
         collectionProductIndex[result.__parentId] = [];
       }
 
-      collectionProductIndex[result.__parentId].push(
+      collectionProductIndex[result.__parentId].unshift(
         createNodeId(id, gatsbyApi, pluginOptions)
       );
     }
