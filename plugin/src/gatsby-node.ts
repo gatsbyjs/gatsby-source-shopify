@@ -23,7 +23,6 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     password: Joi.string().required(),
     storeUrl: Joi.string().required(),
     downloadImages: Joi.boolean(),
-    verboseLogging: Joi.boolean(),
     typePrefix: Joi.string()
       .pattern(new RegExp("(^[A-Z]w*)"))
       .message(

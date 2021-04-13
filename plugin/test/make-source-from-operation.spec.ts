@@ -180,7 +180,7 @@ describe("When polling an operation", () => {
         resolveOnce({
           node: {
             status: `CREATED`,
-            id: "",
+            id,
             objectCount: "0",
             query: "",
             url: "",
@@ -189,10 +189,22 @@ describe("When polling an operation", () => {
       ),
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
+        resolveOnce({
+          node: {
+            status: `RUNNING`,
+            id,
+            objectCount: "1",
+            query: "",
+            url: "http://results.url",
+          },
+        })
+      ),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
         resolve({
           node: {
             status: `COMPLETED`,
-            id: "12345",
+            id,
             objectCount: "1",
             query: "",
             url: "http://results.url",
@@ -253,7 +265,7 @@ describe("When polling an operation", () => {
 
     expect(setStatus).toHaveBeenCalledWith(shiftLeft`
       Polling bulk operation: ${id}
-      Status: COMPLETED
+      Status: RUNNING
       Object count: 1
     `);
   });
