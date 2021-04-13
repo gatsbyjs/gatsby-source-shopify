@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gatsbyjs/gatsby-source-shopify-experimental.git"
+    "url": "git+https://github.com/gatsbyjs/gatsby-source-shopify.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental/issues"
+    "url": "https://github.com/gatsbyjs/gatsby-source-shopify/issues"
   },
-  "homepage": "https://github.com/gatsbyjs/gatsby-source-shopify-experimental#readme",
+  "homepage": "https://github.com/gatsbyjs/gatsby-source-shopify#readme",
   "dependencies": {
     "gatsby-core-utils": "^2.1.0",
     "gatsby-source-filesystem": "^3.1.0",
