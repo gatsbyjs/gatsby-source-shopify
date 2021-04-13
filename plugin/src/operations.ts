@@ -130,13 +130,13 @@ export function createOperations(
     interval = 1000
   ): Promise<{ node: BulkOperationNode }> {
     let operation = await client.request<{
-        node: BulkOperationNode;
-      }>(OPERATION_BY_ID, {
-        id: operationId,
-      });
+      node: BulkOperationNode;
+    }>(OPERATION_BY_ID, {
+      id: operationId,
+    });
 
     nodeStatsChangedCallback(operation.node);
-    
+
     while (true) {
       if (options.verboseLogging) {
         reporter.verbose(`
@@ -168,7 +168,8 @@ export function createOperations(
         id: operationId,
       });
 
-      const updated: boolean = JSON.stringify(operation.node) !== JSON.stringify(nextOperation.node);
+      const updated: boolean =
+        JSON.stringify(operation.node) !== JSON.stringify(nextOperation.node);
 
       if (updated) nodeStatsChangedCallback(nextOperation.node);
 
