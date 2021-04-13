@@ -20,7 +20,7 @@ jobs:
           node-version: 12.x
       - name: Install dependencies
         run: yarn install
-      - name: Run tests
+      - name: Check formatting
         working-directory: ./plugin
         run: yarn prettier-check
 
@@ -31,7 +31,6 @@ jobs:
     strategy:
       matrix:
         node-version: [12.x, 14.x, 15.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
       - uses: actions/checkout@v2
@@ -50,4 +49,6 @@ jobs:
         run: yarn test --coverage
       - name: Upload coverage reports
         uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
         if: matrix.node-version == '12.x'
