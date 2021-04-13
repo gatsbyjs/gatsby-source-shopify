@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify-experimental.git"
+    "url": "git+https://github.com/gatsby-inc/gatsby-source-shopify.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/gatsby-inc/gatsby-source-shopify-experimental/issues"
+    "url": "https://github.com/gatsby-inc/gatsby-source-shopify/issues"
   },
-  "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify-experimental#readme"
+  "homepage": "https://github.com/gatsby-inc/gatsby-source-shopify#readme"
 }
