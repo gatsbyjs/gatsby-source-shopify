@@ -7,7 +7,25 @@ on:
     branches: [master]
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-12.x-modules-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install dependencies
+        run: yarn install
+      - name: Run tests
+        working-directory: ./plugin
+        run: yarn prettier-check
+
   test:
+    needs: format
     runs-on: ubuntu-latest
 
     strategy:
@@ -17,6 +35,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-${{ matrix.node-version }}-modules-${{ hashFiles('**/yarn.lock') }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:

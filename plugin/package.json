@@ -6,7 +6,6 @@
     "watch": "tsc-watch --outDir .",
     "build": "tsc --outDir .",
     "prepublish": "yarn build && cp ../README.md .",
-    "ci": "yarn test && yarn prettier-check",
     "test": "jest",
     "prettier-check": "prettier-check ./**/*.ts",
     "prettier-fix": "prettier --write ./**/*.ts",
