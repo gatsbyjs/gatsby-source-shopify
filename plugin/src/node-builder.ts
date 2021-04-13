@@ -131,13 +131,15 @@ export const processorMap: ProcessorMap = {
     await processChildImage(
       node,
       (node) => {
-        const media = node.featuredMedia as {
-          preview?: {
-            image?: ImageData;
-          };
-        };
+        const media = node.featuredMedia as
+          | {
+              preview?: {
+                image?: ImageData;
+              };
+            }
+          | undefined;
 
-        return media.preview?.image;
+        return media?.preview?.image;
       },
       gatsbyApi,
       options
