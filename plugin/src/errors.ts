@@ -14,7 +14,7 @@ export class OperationError extends Error {
     super(`Operation ${id} failed with ${errorCode}`);
 
     this.node = node;
-    
+
     Error.captureStackTrace(this, OperationError);
   }
 }

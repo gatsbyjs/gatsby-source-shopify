@@ -9,9 +9,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-12.x-modules-${{ hashFiles('**/yarn.lock') }}
       - uses: actions/setup-node@v1
         with:
-          node-version: "12.13.x"
+          node-version: 12.x
       - name: Install dependencies
         run: yarn install
       - name: Build project

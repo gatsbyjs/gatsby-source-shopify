@@ -7,16 +7,37 @@ on:
     branches: [master]
 
 jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-12.x-modules-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: Install dependencies
+        run: yarn install
+      - name: Check formatting
+        working-directory: ./plugin
+        run: yarn prettier-check
+
   test:
+    needs: format
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [12.x, 14.x, 15.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-${{ matrix.node-version }}-modules-${{ hashFiles('**/yarn.lock') }}
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
@@ -28,4 +49,6 @@ jobs:
         run: yarn test --coverage
       - name: Upload coverage reports
         uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
         if: matrix.node-version == '12.x'
