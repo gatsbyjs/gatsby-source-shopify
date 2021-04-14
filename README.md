@@ -1,5 +1,5 @@
-![ci status](https://github.com/gatsbyjs/gatsby-source-shopify-experimental/actions/workflows/ci.yml/badge.svg)
-[![codecov](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify-experimental/branch/master/graph/badge.svg?token=0YY6FPV3MB)](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify-experimental)
+![ci status](https://github.com/gatsbyjs/gatsby-source-shopify/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify-experimental/branch/master/graph/badge.svg?token=0YY6FPV3MB)](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify)
 
 # gatsby-source-shopify
 
