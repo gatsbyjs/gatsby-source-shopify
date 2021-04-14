@@ -1,4 +1,5 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
+import { shiftLeft } from "shift-left";
 import { createClient } from "./client";
 import { collectionsProcessor } from "./processors";
 import { OperationError } from "./errors";
@@ -67,11 +68,9 @@ export function createOperations(
       while (!finishedStatuses.includes(currentBulkOperation.status)) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         currentBulkOperation = (await currentOperation()).currentBulkOperation;
-        if (options.verboseLogging) {
-          reporter.verbose(
-            `Polling operation ${currentBulkOperation.id} : ${currentBulkOperation.status}`
-          );
-        }
+        timer.setStatus(
+          `Polling operation ${currentBulkOperation.id} : ${currentBulkOperation.status}`
+        );
       }
 
       timer.end();
@@ -90,8 +89,14 @@ export function createOperations(
       return;
     }
 
+    const cancelTimer = reporter.activityTimer(
+      `Caneling previous operation: ${bulkOperation.id}`
+    );
+
+    cancelTimer.start();
+
     if (bulkOperation.status === `RUNNING`) {
-      reporter.info(
+      cancelTimer.setStatus(
         `Canceling a currently running operation: ${bulkOperation.id}, this could take a few moments`
       );
 
@@ -103,6 +108,9 @@ export function createOperations(
         await new Promise((resolve) => setTimeout(resolve, 100));
         const currentOp = await currentOperation();
         bulkOperation = currentOp.currentBulkOperation;
+        cancelTimer.setStatus(
+          `Waiting for operation to cancel: ${bulkOperation.id}, ${bulkOperation.status}`
+        );
       }
     } else {
       /**
@@ -113,8 +121,13 @@ export function createOperations(
       while (!finishedStatuses.includes(bulkOperation.status)) {
         await new Promise((resolve) => setTimeout(resolve, 100));
         bulkOperation = (await currentOperation()).currentBulkOperation;
+        cancelTimer.setStatus(
+          `Waiting for operation to cancel: ${bulkOperation.id}, ${bulkOperation.status}`
+        );
       }
     }
+
+    cancelTimer.end();
   }
 
   /* Maybe the interval should be adjustable, because users
@@ -126,7 +139,6 @@ export function createOperations(
    */
   async function completedOperation(
     operationId: string,
-    nodeStatsChangedCallback: (node: BulkOperationNode) => void,
     interval = 1000
   ): Promise<{ node: BulkOperationNode }> {
     let operation = await client.request<{
@@ -135,45 +147,36 @@ export function createOperations(
       id: operationId,
     });
 
-    nodeStatsChangedCallback(operation.node);
+    const completedTimer = reporter.activityTimer(
+      `Waiting for bulk operation to complete`
+    );
+
+    completedTimer.start();
 
     while (true) {
-      if (options.verboseLogging) {
-        reporter.verbose(`
-          Waiting for operation to complete
-
-          ${operationId}
-
-          Status: ${operation.node.status}
-
-          Object count: ${operation.node.objectCount}
-
-          Url: ${operation.node.url}
-        `);
-      }
-
       if (failedStatuses.includes(operation.node.status)) {
+        completedTimer.end();
         throw new OperationError(operation.node);
       }
 
       if (operation.node.status === "COMPLETED") {
+        completedTimer.end();
         return operation;
       }
 
       await new Promise((resolve) => setTimeout(resolve, interval));
 
-      const nextOperation = await client.request<{
+      operation = await client.request<{
         node: BulkOperationNode;
       }>(OPERATION_BY_ID, {
         id: operationId,
       });
 
-      const updated: boolean =
-        JSON.stringify(operation.node) !== JSON.stringify(nextOperation.node);
-
-      if (updated) nodeStatsChangedCallback(nextOperation.node);
-
-      operation = nextOperation;
+      completedTimer.setStatus(shiftLeft`
+        Polling bulk operation: ${operation.node.id}
+        Status: ${operation.node.status}
+        Object count: ${operation.node.objectCount}
+      `);
     }
   }
 
