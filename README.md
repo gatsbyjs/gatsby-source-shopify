@@ -235,10 +235,7 @@ function ProductListing(product) {
 
 The bulk API was chosen for resiliency, but it comes with some limitations. For a given store + app combination, only one bulk operation can be run at a time, so this plugin will wait for in-progress operations to complete. If your store contains a lot of data and there are multiple developers doing a clean build at the same time, they could be waiting on each other for a significant period of time.
 
-Possible workarounds include:
-
-1. Using a smaller test store for development so that bulk operations finish fast
-1. Creating multiple apps for the same store
+A possible workaround is to use a smaller test store for development so bulk operations finish faster and never compete with production builds.
 
 ## Development
 
