@@ -258,6 +258,11 @@ export function onPreInit({ reporter }: NodePluginArgs) {
       level: `ERROR`,
       category: `USER`,
     },
+    [errorCodes.apiConflict]: {
+      text: getErrorText,
+      level: `ERROR`,
+      category: `USER`,
+    },
     /**
      * If we don't know what it is, we haven't done our due
      * diligence to handle it explicitly. That means it's our
