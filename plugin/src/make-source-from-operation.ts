@@ -127,15 +127,15 @@ export function makeSourceFromOperation(
               error: e,
               context: {},
             });
+          } else {
+            // A prod build canceled me, wait and try again
+            operationTimer.setStatus(
+              "This operation has been canceled by a higher priority build. It will retry shortly."
+            );
+            operationTimer.end();
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            await sourceFromOperation(op);
           }
-
-          // A prod build canceled me, wait and try again
-          operationTimer.setStatus(
-            "This operation has been canceled by a higher priority build. It will retry shortly."
-          );
-          operationTimer.end();
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          await sourceFromOperation(op);
         }
 
         if (e.node.errorCode === `ACCESS_DENIED`) {

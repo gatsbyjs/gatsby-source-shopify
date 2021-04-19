@@ -395,7 +395,74 @@ describe("A production build", () => {
         "OPERATION_STATUS",
         resolve(currentBulkOperation("CANCELED"))
       ),
-      startOperation(),
+      startOperation()
+    );
+  });
+
+  it("panics if it finds itself canceled", async () => {
+    server.use(
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolve({
+          node: {
+            status: `CANCELED`,
+            id: "",
+            objectCount: "0",
+            query: "",
+            url: "",
+          },
+        })
+      )
+    );
+    const panic = jest.fn();
+    const gatsbyApiMock = jest.fn().mockImplementation(() => {
+      return {
+        cache: {
+          set: jest.fn(),
+        },
+        actions: {
+          createNode: jest.fn(),
+        },
+        createContentDigest: jest.fn(),
+        createNodeId: jest.fn(),
+        reporter: {
+          info: jest.fn(),
+          error: jest.fn(),
+          panic,
+          activityTimer: () => ({
+            start: jest.fn(),
+            end: jest.fn(),
+            setStatus: jest.fn(),
+          }),
+        },
+      };
+    });
+
+    const gatsbyApi = gatsbyApiMock as jest.Mock<SourceNodesArgs>;
+    const options = {
+      apiKey: ``,
+      password: ``,
+      storeUrl: "my-shop.shopify.com",
+    };
+    const operations = createOperations(options, gatsbyApi());
+
+    const sourceFromOperation = makeSourceFromOperation(
+      operations.finishLastOperation,
+      operations.completedOperation,
+      operations.cancelOperationInProgress,
+      gatsbyApi(),
+      options
+    );
+
+    await sourceFromOperation(operations.createProductsOperation, true);
+
+    expect(panic).toHaveBeenCalledWith(
+      expect.objectContaining({ id: pluginErrorCodes.apiConflict })
+    );
+  });
+
+  it("cancels other operations in progress", async () => {
+    server.use(
       graphql.query<{ node: BulkOperationNode }>(
         "OPERATION_BY_ID",
         resolve({
@@ -412,9 +479,6 @@ describe("A production build", () => {
         return res(ctx.text(JSON.stringify(bulkResult)));
       })
     );
-  });
-
-  it("cancels other operations in progress", async () => {
     const createNode = jest.fn();
     const gatsbyApiMock = jest.fn().mockImplementation(() => {
       return {
