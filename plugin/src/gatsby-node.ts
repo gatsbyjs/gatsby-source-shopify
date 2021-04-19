@@ -11,6 +11,7 @@ import {
   getGatsbyImageResolver,
   IGatsbyGraphQLResolverArgumentConfig,
 } from "gatsby-plugin-image/graphql-utils";
+import { shiftLeft } from "shift-left";
 import { pluginErrorCodes as errorCodes } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 import { makeSourceFromOperation } from "./make-source-from-operation";
@@ -259,7 +260,15 @@ export function onPreInit({ reporter }: NodePluginArgs) {
       category: `USER`,
     },
     [errorCodes.apiConflict]: {
-      text: getErrorText,
+      text: () => shiftLeft`
+        Your operation was canceled. You might have another production site for this Shopify store.
+
+        Shopify only allows one bulk operation at a time for a given shop, so we recommend that you
+        avoid having two production sites that point to the same Shopify store.
+
+        If the duplication is intentional, please wait for the other operation to finish before trying
+        again. Otherwise, consider deleting the other site or pointing it to a test store instead.
+      `,
       level: `ERROR`,
       category: `USER`,
     },

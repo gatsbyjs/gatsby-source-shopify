@@ -10,7 +10,6 @@ import {
   pluginErrorCodes as errorCodes,
 } from "./errors";
 import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
-import { shiftLeft } from "shift-left";
 
 export function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
@@ -126,17 +125,7 @@ export function makeSourceFromOperation(
             reporter.panic({
               id: errorCodes.apiConflict,
               error: e,
-              context: {
-                sourceMessage: shiftLeft`
-                  Your operation was canceled. You might have another production site for this Shopify store.
-
-                  Shopify only allows one bulk operation at a time for a given shop, so we recommend that you
-                  avoid having two production sites that point to the same Shopify store.
-
-                  If the duplication is intentional, please wait for the other operation to finish before trying
-                  again. Otherwise, consider deleting the other site or pointing it to a test store instead.
-                `,
-              },
+              context: {},
             });
           }
 
