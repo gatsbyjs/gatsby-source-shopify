@@ -4,6 +4,8 @@ export const pluginErrorCodes = {
   bulkOperationFailed: "111000",
   unknownSourcingFailure: "111001",
   unknownApiError: "111002",
+
+  apiConflict: "111003",
 };
 
 export class OperationError extends Error {

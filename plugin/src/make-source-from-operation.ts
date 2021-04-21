@@ -117,13 +117,25 @@ export function makeSourceFromOperation(
         const code = errorCodes.bulkOperationFailed;
 
         if (e.node.status === `CANCELED`) {
-          // A prod build canceled me, wait and try again
-          operationTimer.setStatus(
-            "This operation has been canceled by a higher priority build. It will retry shortly."
-          );
-          operationTimer.end();
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          await sourceFromOperation(op);
+          if (isPriorityBuild) {
+            /**
+             * There are at least two production sites for this Shopify
+             * store trying to run an operation at the same time.
+             */
+            reporter.panic({
+              id: errorCodes.apiConflict,
+              error: e,
+              context: {},
+            });
+          } else {
+            // A prod build canceled me, wait and try again
+            operationTimer.setStatus(
+              "This operation has been canceled by a higher priority build. It will retry shortly."
+            );
+            operationTimer.end();
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            await sourceFromOperation(op);
+          }
         }
 
         if (e.node.errorCode === `ACCESS_DENIED`) {
