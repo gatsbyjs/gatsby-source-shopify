@@ -22,7 +22,6 @@ function attachParentId(
     const field = remoteType.charAt(0).toLowerCase() + remoteType.slice(1);
     const idField = `${field}Id`;
     result[idField] = createNodeId(fullId, gatsbyApi, pluginOptions);
-    delete result.__parentId;
   }
 }
 
@@ -152,6 +151,11 @@ export const processorMap: ProcessorMap = {
       gatsbyApi,
       options
     );
+  },
+  Metafield: async (node, _gatsbyApi, { typePrefix = "" }) => {
+    const [, parentType] = (node.__parentId as string).match(pattern) || [];
+    const internalType = `${typePrefix}Shopify${parentType}Metafield`;
+    node.internal.type = internalType;
   },
 };
 
