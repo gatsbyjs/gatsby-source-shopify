@@ -35,6 +35,10 @@ export function collectionsProcessor(
       );
     }
 
+    if (remoteType === `Metafield`) {
+      promises.push(builder.buildNode(result));
+    }
+
     if (remoteType == `Collection`) {
       result.productIds = collectionProductIndex[result.id] || [];
       promises.push(builder.buildNode(result));

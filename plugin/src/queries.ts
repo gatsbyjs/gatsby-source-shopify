@@ -85,6 +85,22 @@ const collectionsQuery = (dateString?: string) => `
             }
           }
         }
+        metafields {
+          edges {
+            node {
+              createdAt
+              description
+              id
+              key
+              legacyResourceId
+              namespace
+              ownerType
+              updatedAt
+              value
+              valueType
+            }
+          }
+        }
         description
         descriptionHtml
         feedback {
@@ -288,6 +304,22 @@ const productsQuery = (dateString?: string) => {
                 }
               }
             }
+            metafields {
+              edges {
+                node {
+                  createdAt
+                  description
+                  id
+                  key
+                  legacyResourceId
+                  namespace
+                  ownerType
+                  updatedAt
+                  value
+                  valueType
+                }
+              }
+            }
             variants {
               edges {
                 node {
@@ -326,10 +358,14 @@ const productsQuery = (dateString?: string) => {
                   metafields {
                     edges {
                       node {
+                        createdAt
                         description
                         id
                         key
+                        legacyResourceId
                         namespace
+                        ownerType
+                        updatedAt
                         value
                         valueType
                       }

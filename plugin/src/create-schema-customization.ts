@@ -60,11 +60,63 @@ export function createSchemaCustomization(
 
   const name = (name: string) => `${pluginOptions.typePrefix || ""}${name}`;
 
+  const sharedMetafieldFields: GatsbyGraphQLObjectType["config"]["fields"] = {
+    createdAt: "Date!",
+    description: "String",
+    id: "ID!",
+    key: "String!",
+    namespace: "String!",
+    ownerType: "String!",
+    updatedAt: "Date!",
+    value: "String!",
+    valueType: "String!",
+  };
+
+  const metafieldInterface = schema.buildInterfaceType({
+    name: name("ShopifyMetafieldInterface"),
+    fields: sharedMetafieldFields,
+    interfaces: ["Node"],
+  });
+
+  const metafieldOwnerTypes = ["Product", "ProductVariant"];
+  if (includeCollections) {
+    metafieldOwnerTypes.push("Collection");
+  }
+
+  const metafieldTypes = metafieldOwnerTypes.map((ownerType: string) => {
+    const parentKey = ownerType.charAt(0).toLowerCase() + ownerType.slice(1);
+    return schema.buildObjectType({
+      name: name(`Shopify${ownerType}Metafield`),
+      fields: {
+        ...sharedMetafieldFields,
+        [parentKey]: {
+          type: name(`Shopify${ownerType}`),
+          extensions: {
+            link: {
+              from: `${parentKey}Id`,
+              by: "id",
+            },
+          },
+        },
+      },
+      interfaces: ["Node", name("ShopifyMetafieldInterface")],
+    });
+  });
+
   const productDef = schema.buildObjectType({
     name: name("ShopifyProduct"),
     fields: {
       variants: {
         type: `[${name("ShopifyProductVariant")}]`,
+        extensions: {
+          link: {
+            from: "id",
+            by: "productId",
+          },
+        },
+      },
+      metafields: {
+        type: `[${name("ShopifyProductMetafield")}]`,
         extensions: {
           link: {
             from: "id",
@@ -134,7 +186,7 @@ export function createSchemaCustomization(
           },
         },
         metafields: {
-          type: `[${name("ShopifyMetafield")}]`,
+          type: `[${name("ShopifyProductVariantMetafield")}]`,
           extensions: {
             link: {
               from: "id",
@@ -145,27 +197,8 @@ export function createSchemaCustomization(
       },
       interfaces: ["Node"],
     }),
-    /**
-     * FIXME: let's change this to e.g. ShopifyProductVariantMetafield,
-     * because we will want metafields attached to other resource types
-     * as well. This will need to come with a change in node creation logic
-     * where the type name is partially derived from the parent ID.
-     */
-    schema.buildObjectType({
-      name: name("ShopifyMetafield"),
-      fields: {
-        productVariant: {
-          type: name("ShopifyProductVariant!"),
-          extensions: {
-            link: {
-              from: "productVariantId",
-              by: "id",
-            },
-          },
-        },
-      },
-      interfaces: ["Node"],
-    }),
+    metafieldInterface,
+    ...metafieldTypes,
   ];
 
   if (includeCollections) {
@@ -179,6 +212,15 @@ export function createSchemaCustomization(
               link: {
                 from: "productIds",
                 by: "id",
+              },
+            },
+          },
+          metafields: {
+            type: `[${name("ShopifyCollectionMetafield")}]`,
+            extensions: {
+              link: {
+                from: "id",
+                by: "collectionId",
               },
             },
           },
