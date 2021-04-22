@@ -2,6 +2,7 @@ import { NodeInput, SourceNodesArgs } from "gatsby";
 import { shiftLeft } from "shift-left";
 import { createClient } from "./client";
 import { ProductsQuery } from "./query-builders/products-query";
+import { CollectionsQuery } from "./query-builders/collections-query";
 import { collectionsProcessor } from "./processors";
 import { OperationError } from "./errors";
 
@@ -9,10 +10,8 @@ import {
   OPERATION_STATUS_QUERY,
   OPERATION_BY_ID,
   CREATE_ORDERS_OPERATION,
-  CREATE_COLLECTIONS_OPERATION,
   CANCEL_OPERATION,
   incrementalOrdersQuery,
-  incrementalCollectionsQuery,
 } from "./queries";
 
 export interface ShopifyBulkOperation {
@@ -196,7 +195,7 @@ export function createOperations(
 
     incrementalCollections(date: Date) {
       return createOperation(
-        incrementalCollectionsQuery(date),
+        new CollectionsQuery(options).query(date),
         "INCREMENTAL_COLLECTIONS",
         collectionsProcessor
       );
@@ -210,7 +209,7 @@ export function createOperations(
     createOrdersOperation: createOperation(CREATE_ORDERS_OPERATION, "ORDERS"),
 
     createCollectionsOperation: createOperation(
-      CREATE_COLLECTIONS_OPERATION,
+      new CollectionsQuery(options).query(),
       "COLLECTIONS",
       collectionsProcessor
     ),
