@@ -1,17 +1,16 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
 import { shiftLeft } from "shift-left";
 import { createClient } from "./client";
+import { ProductsQuery } from "./query-builders/products-query";
 import { collectionsProcessor } from "./processors";
 import { OperationError } from "./errors";
 
 import {
   OPERATION_STATUS_QUERY,
   OPERATION_BY_ID,
-  CREATE_PRODUCTS_OPERATION,
   CREATE_ORDERS_OPERATION,
   CREATE_COLLECTIONS_OPERATION,
   CANCEL_OPERATION,
-  incrementalProductsQuery,
   incrementalOrdersQuery,
   incrementalCollectionsQuery,
 } from "./queries";
@@ -183,7 +182,7 @@ export function createOperations(
   return {
     incrementalProducts(date: Date) {
       return createOperation(
-        incrementalProductsQuery(date),
+        new ProductsQuery(options).query(date),
         "INCREMENTAL_PRODUCTS"
       );
     },
@@ -204,7 +203,7 @@ export function createOperations(
     },
 
     createProductsOperation: createOperation(
-      CREATE_PRODUCTS_OPERATION,
+      new ProductsQuery(options).query(),
       "PRODUCTS"
     ),
 

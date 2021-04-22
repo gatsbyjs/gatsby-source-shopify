@@ -32,7 +32,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
       .default(""),
     shopifyConnections: Joi.array()
       .default([])
-      .items(Joi.string().valid("orders", "collections")),
+      .items(Joi.string().valid("orders", "collections", "publications")),
   });
 }
 
