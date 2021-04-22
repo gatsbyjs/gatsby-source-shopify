@@ -1,5 +1,6 @@
 ![ci status](https://github.com/gatsbyjs/gatsby-source-shopify/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify/branch/master/graph/badge.svg?token=0YY6FPV3MB)](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify)
+
 # gatsby-source-shopify
 
 A scalable solution for sourcing data from Shopify.
@@ -49,7 +50,7 @@ Once logged into Shopify admin, navigate to the `Apps` page and click the link a
 For the Private app name enter `Gatsby` (the name does not really matter). Add the following under the `Active Permissions for this App` section:
 
 - `Read access` for `Products`
-- `Read access` for `Product listings` if you want to use Shopify's Product Collections in your Gatsby site
+- `Read access` for `Product listings`
 - `Read access` for `Orders` if you want to use order information in your Gatsby site
 
 **Note: Enabling Cart and Checkout features**
