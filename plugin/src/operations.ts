@@ -3,16 +3,15 @@ import { shiftLeft } from "shift-left";
 import { createClient } from "./client";
 import { ProductsQuery } from "./query-builders/products-query";
 import { CollectionsQuery } from "./query-builders/collections-query";
+import { OrdersQuery } from "./query-builders/orders-query";
 import { collectionsProcessor } from "./processors";
 import { OperationError } from "./errors";
 
 import {
   OPERATION_STATUS_QUERY,
   OPERATION_BY_ID,
-  CREATE_ORDERS_OPERATION,
   CANCEL_OPERATION,
-  incrementalOrdersQuery,
-} from "./queries";
+} from "./static-queries";
 
 export interface ShopifyBulkOperation {
   execute: () => Promise<BulkOperationRunQueryResponse>;
@@ -188,7 +187,7 @@ export function createOperations(
 
     incrementalOrders(date: Date) {
       return createOperation(
-        incrementalOrdersQuery(date),
+        new OrdersQuery(options).query(date),
         "INCREMENTAL_ORDERS"
       );
     },
@@ -206,7 +205,10 @@ export function createOperations(
       "PRODUCTS"
     ),
 
-    createOrdersOperation: createOperation(CREATE_ORDERS_OPERATION, "ORDERS"),
+    createOrdersOperation: createOperation(
+      new OrdersQuery(options).query(),
+      "ORDERS"
+    ),
 
     createCollectionsOperation: createOperation(
       new CollectionsQuery(options).query(),
