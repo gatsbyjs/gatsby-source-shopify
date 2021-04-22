@@ -1,11 +1,6 @@
 import { BulkQuery } from "./bulk-query";
 
 export class CollectionsQuery extends BulkQuery {
-  get usesPublicationData() {
-    const connections = this.pluginOptions.shopifyConnections || [];
-    return connections.includes("publications");
-  }
-
   query(date?: Date) {
     const filters = [];
     if (date) {
@@ -43,6 +38,10 @@ export class CollectionsQuery extends BulkQuery {
                   }
                 }
               }
+              ${this.conditionalField(
+                "availablePublicationCount",
+                this.canReadPublications
+              )}
               description
               descriptionHtml
               feedback {
@@ -85,10 +84,7 @@ export class CollectionsQuery extends BulkQuery {
                 description
                 title
               }
-              ${this.conditionalField(
-                "publishedOnCurrentPublication",
-                this.usesPublicationData
-              )}
+              publishedOnCurrentPublication
               sortOrder
               storefrontId
               templateSuffix

@@ -1,8 +1,11 @@
+type PrivelegedScope = "read_publications";
+
 interface ShopifyPluginOptions {
   apiKey: string;
   password: string;
   storeUrl: string;
   downloadImages?: boolean;
+  privilegedAccessScopes?: PrivelegedScope[];
   shopifyConnections?: string[];
   typePrefix?: string;
 }

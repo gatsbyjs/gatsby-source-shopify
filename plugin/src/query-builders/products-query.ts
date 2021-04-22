@@ -1,11 +1,6 @@
 import { BulkQuery } from "./bulk-query";
 
 export class ProductsQuery extends BulkQuery {
-  get usesPublicationData() {
-    const connections = this.pluginOptions.shopifyConnections || [];
-    return connections.includes("publications");
-  }
-
   query(date?: Date) {
     const filters = [`status:active`];
     if (date) {
@@ -22,6 +17,10 @@ export class ProductsQuery extends BulkQuery {
             node {
               id
               storefrontId
+              ${this.conditionalField(
+                "availablePublicationCount",
+                this.canReadPublications
+              )}
               createdAt
               description
               descriptionHtml
@@ -94,11 +93,12 @@ export class ProductsQuery extends BulkQuery {
                 }
               }
               productType
-              publishedAt
               ${this.conditionalField(
-                "publishedOnCurrentPublication",
-                this.usesPublicationData
+                "publicationCount",
+                this.canReadPublications
               )}
+              publishedAt
+              publishedOnCurrentPublication
               requiresSellingPlan
               sellingPlanGroupCount
               seo {
