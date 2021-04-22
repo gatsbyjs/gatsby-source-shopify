@@ -21,7 +21,7 @@ export function createClient(options: ShopifyPluginOptions) {
         "X-Shopify-Access-Token": options.password,
       },
       body: JSON.stringify({
-        query: query.trim(),
+        query,
         variables,
       }),
     });
