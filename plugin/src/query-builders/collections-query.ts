@@ -2,7 +2,7 @@ import { BulkQuery } from "./bulk-query";
 
 export class CollectionsQuery extends BulkQuery {
   query(date?: Date) {
-    const filters = [];
+    const filters = [`published_status:published`];
     if (date) {
       const isoDate = date.toISOString();
       filters.push(`created_at:>='${isoDate}' OR updated_at:>='${isoDate}'`);
