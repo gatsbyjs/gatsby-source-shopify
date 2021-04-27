@@ -33,9 +33,6 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     shopifyConnections: Joi.array()
       .default([])
       .items(Joi.string().valid("orders", "collections")),
-    privilegedAccessScopes: Joi.array()
-      .default([])
-      .items(Joi.string().valid("read_publications")),
     salesChannel: Joi.string(),
   });
 }

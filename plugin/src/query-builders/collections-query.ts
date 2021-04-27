@@ -42,10 +42,6 @@ export class CollectionsQuery extends BulkQuery {
                   }
                 }
               }
-              ${this.conditionalField(
-                "availablePublicationCount",
-                this.canReadPublications
-              )}
               description
               descriptionHtml
               feedback {
@@ -88,7 +84,6 @@ export class CollectionsQuery extends BulkQuery {
                 description
                 title
               }
-              publishedOnCurrentPublication
               sortOrder
               storefrontId
               templateSuffix

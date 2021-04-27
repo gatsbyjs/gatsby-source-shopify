@@ -5,16 +5,7 @@ export abstract class BulkQuery {
     this.pluginOptions = pluginOptions;
   }
 
-  get canReadPublications() {
-    const scopes = this.pluginOptions.privilegedAccessScopes || [];
-    return scopes.includes("read_publications");
-  }
-
   abstract query(date?: Date): string;
-
-  protected conditionalField(field: string, condition: boolean) {
-    return condition ? field : `# omitted field: ${field}`;
-  }
 
   protected bulkOperationQuery(query: string) {
     return `

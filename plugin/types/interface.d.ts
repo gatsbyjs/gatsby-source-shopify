@@ -5,7 +5,6 @@ interface ShopifyPluginOptions {
   password: string;
   storeUrl: string;
   downloadImages?: boolean;
-  privilegedAccessScopes?: PrivelegedScope[];
   shopifyConnections?: string[];
   typePrefix?: string;
   salesChannel?: string;

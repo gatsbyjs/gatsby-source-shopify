@@ -21,10 +21,6 @@ export class ProductsQuery extends BulkQuery {
             node {
               id
               storefrontId
-              ${this.conditionalField(
-                "availablePublicationCount",
-                this.canReadPublications
-              )}
               createdAt
               description
               descriptionHtml
@@ -97,12 +93,7 @@ export class ProductsQuery extends BulkQuery {
                 }
               }
               productType
-              ${this.conditionalField(
-                "publicationCount",
-                this.canReadPublications
-              )}
               publishedAt
-              publishedOnCurrentPublication
               requiresSellingPlan
               sellingPlanGroupCount
               seo {
