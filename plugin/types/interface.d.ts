@@ -8,6 +8,7 @@ interface ShopifyPluginOptions {
   privilegedAccessScopes?: PrivelegedScope[];
   shopifyConnections?: string[];
   typePrefix?: string;
+  salesChannel?: string;
 }
 
 interface NodeBuilder {

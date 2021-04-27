@@ -2,7 +2,11 @@ import { BulkQuery } from "./bulk-query";
 
 export class ProductsQuery extends BulkQuery {
   query(date?: Date) {
-    const filters = [`status:active`, `published_status:published`];
+    const publishedStatus = this.pluginOptions.salesChannel
+      ? encodeURIComponent(`${this.pluginOptions.salesChannel}=visible`)
+      : `published`;
+
+    const filters = [`status:active`, `published_status:${publishedStatus}`];
     if (date) {
       const isoDate = date.toISOString();
       filters.push(`created_at:>='${isoDate}' OR updated_at:>='${isoDate}'`);

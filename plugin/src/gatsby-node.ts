@@ -36,6 +36,7 @@ export function pluginOptionsSchema({ Joi }: PluginOptionsSchemaArgs) {
     privilegedAccessScopes: Joi.array()
       .default([])
       .items(Joi.string().valid("read_publications")),
+    salesChannel: Joi.string(),
   });
 }
 
