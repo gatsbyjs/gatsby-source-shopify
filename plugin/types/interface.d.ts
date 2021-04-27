@@ -1,5 +1,3 @@
-type PrivelegedScope = "read_publications";
-
 interface ShopifyPluginOptions {
   apiKey: string;
   password: string;
