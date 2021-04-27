@@ -1,20 +1,17 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
 import { shiftLeft } from "shift-left";
 import { createClient } from "./client";
+import { ProductsQuery } from "./query-builders/products-query";
+import { CollectionsQuery } from "./query-builders/collections-query";
+import { OrdersQuery } from "./query-builders/orders-query";
 import { collectionsProcessor } from "./processors";
 import { OperationError } from "./errors";
 
 import {
   OPERATION_STATUS_QUERY,
   OPERATION_BY_ID,
-  CREATE_PRODUCTS_OPERATION,
-  CREATE_ORDERS_OPERATION,
-  CREATE_COLLECTIONS_OPERATION,
   CANCEL_OPERATION,
-  incrementalProductsQuery,
-  incrementalOrdersQuery,
-  incrementalCollectionsQuery,
-} from "./queries";
+} from "./static-queries";
 
 export interface ShopifyBulkOperation {
   execute: () => Promise<BulkOperationRunQueryResponse>;
@@ -183,35 +180,38 @@ export function createOperations(
   return {
     incrementalProducts(date: Date) {
       return createOperation(
-        incrementalProductsQuery(date),
+        new ProductsQuery(options).query(date),
         "INCREMENTAL_PRODUCTS"
       );
     },
 
     incrementalOrders(date: Date) {
       return createOperation(
-        incrementalOrdersQuery(date),
+        new OrdersQuery(options).query(date),
         "INCREMENTAL_ORDERS"
       );
     },
 
     incrementalCollections(date: Date) {
       return createOperation(
-        incrementalCollectionsQuery(date),
+        new CollectionsQuery(options).query(date),
         "INCREMENTAL_COLLECTIONS",
         collectionsProcessor
       );
     },
 
     createProductsOperation: createOperation(
-      CREATE_PRODUCTS_OPERATION,
+      new ProductsQuery(options).query(),
       "PRODUCTS"
     ),
 
-    createOrdersOperation: createOperation(CREATE_ORDERS_OPERATION, "ORDERS"),
+    createOrdersOperation: createOperation(
+      new OrdersQuery(options).query(),
+      "ORDERS"
+    ),
 
     createCollectionsOperation: createOperation(
-      CREATE_COLLECTIONS_OPERATION,
+      new CollectionsQuery(options).query(),
       "COLLECTIONS",
       collectionsProcessor
     ),

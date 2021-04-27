@@ -1,5 +1,6 @@
 ![ci status](https://github.com/gatsbyjs/gatsby-source-shopify/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify/branch/master/graph/badge.svg?token=0YY6FPV3MB)](https://codecov.io/gh/gatsbyjs/gatsby-source-shopify)
+
 # gatsby-source-shopify
 
 A scalable solution for sourcing data from Shopify.

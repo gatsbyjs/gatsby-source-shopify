@@ -5,6 +5,7 @@ interface ShopifyPluginOptions {
   downloadImages?: boolean;
   shopifyConnections?: string[];
   typePrefix?: string;
+  salesChannel?: string;
 }
 
 interface NodeBuilder {
