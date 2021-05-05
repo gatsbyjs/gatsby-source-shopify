@@ -87,7 +87,7 @@ export function createOperations(
     }
 
     const cancelTimer = reporter.activityTimer(
-      `Caneling previous operation: ${bulkOperation.id}`
+      `Canceling previous operation: ${bulkOperation.id}`
     );
 
     cancelTimer.start();
