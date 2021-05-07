@@ -108,6 +108,10 @@ The plugin's default behavior is to fall back to Shopify's CDN.
 
 Not set by default. If set to a string (example `MyStore`) node names will be `allMyStoreShopifyProducts` instead of `allShopifyProducts`.
 
+`salesChannel: string`
+
+Not set by default. If set to a string (example `My Private App Channel`), only products and collections that are active in that channel will be sourced. If no sales channel is provided, the default behavior is to source products that are available in the online store.
+
 ## Images
 
 We offer two options for displaying Shopify images in your Gatsby site. The default option is to use the Shopify CDN along with [gatsby-plugin-image][gatsby-plugin-image], but you can also opt-in to downloading the images as part of the build process. Your choice will result in differences to the schema. Both options are explained below.
