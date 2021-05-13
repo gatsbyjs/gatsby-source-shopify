@@ -74,7 +74,9 @@ async function sourceAllNodes(
 
 const shopifyNodeTypes = [
   `ShopifyLineItem`,
-  `ShopifyMetafield`,
+  `ShopifyProductMetafield`,
+  `ShopifyProductVariantMetafield`,
+  `ShopifyCollectionMetafield`,
   `ShopifyOrder`,
   `ShopifyProduct`,
   `ShopifyCollection`,
