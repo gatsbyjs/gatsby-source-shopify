@@ -13,7 +13,6 @@ import {
 } from "gatsby-plugin-image/graphql-utils";
 import { shiftLeft } from "shift-left";
 import { pluginErrorCodes as errorCodes } from "./errors";
-import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 import { makeSourceFromOperation } from "./make-source-from-operation";
 export { createSchemaCustomization } from "./create-schema-customization";
 import { createNodeId } from "./node-builder";
@@ -166,17 +165,6 @@ export async function sourceNodes(
   gatsbyApi: SourceNodesArgs,
   pluginOptions: ShopifyPluginOptions
 ) {
-  const cacheKey = LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix || "";
-  const lastOperationId = await gatsbyApi.cache.get(cacheKey);
-
-  if (lastOperationId) {
-    gatsbyApi.reporter.info(`Cancelling last operation: ${lastOperationId}`);
-    await createOperations(pluginOptions, gatsbyApi).cancelOperation(
-      lastOperationId
-    );
-    await gatsbyApi.cache.set(cacheKey, undefined);
-  }
-
   const pluginStatus = gatsbyApi.store.getState().status.plugins?.[
     `gatsby-source-shopify`
   ];

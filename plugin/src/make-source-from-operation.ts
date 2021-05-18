@@ -9,7 +9,6 @@ import {
   HttpError,
   pluginErrorCodes as errorCodes,
 } from "./errors";
-import { LAST_SHOPIFY_BULK_OPERATION } from "./constants";
 
 export function makeSourceFromOperation(
   finishLastOperation: () => Promise<void>,
@@ -22,9 +21,7 @@ export function makeSourceFromOperation(
     op: ShopifyBulkOperation,
     isPriorityBuild = process.env.IS_PRODUCTION_BRANCH === `true`
   ): Promise<void> {
-    const { reporter, actions, cache } = gatsbyApi;
-    const cacheKey =
-      LAST_SHOPIFY_BULK_OPERATION + pluginOptions.typePrefix || "";
+    const { reporter, actions } = gatsbyApi;
 
     const operationTimer = reporter.activityTimer(
       `Source from bulk operation ${op.name}`
@@ -61,8 +58,6 @@ export function makeSourceFromOperation(
           })
         );
       }
-
-      await cache.set(cacheKey, bulkOperation.id);
 
       let resp = await completedOperation(bulkOperation.id);
       reporter.info(`Completed bulk operation ${op.name}: ${bulkOperation.id}`);
@@ -110,8 +105,6 @@ export function makeSourceFromOperation(
       );
 
       operationTimer.end();
-
-      await cache.set(cacheKey, undefined);
     } catch (e) {
       if (e instanceof OperationError) {
         const code = errorCodes.bulkOperationFailed;
