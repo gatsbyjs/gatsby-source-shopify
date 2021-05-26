@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
 import { SourceNodesArgs } from "gatsby";
 import { createInterface } from "readline";
+import { shiftLeft } from "shift-left";
 
 import { nodeBuilder } from "./node-builder";
 import { ShopifyBulkOperation } from "./operations";
@@ -144,7 +145,10 @@ export function makeSourceFromOperation(
         reporter.panic({
           id: errorCodes.unknownSourcingFailure,
           context: {
-            sourceMessage: `Could not source from bulk operation: ${e.node.errorCode}`,
+            sourceMessage: shiftLeft`
+              Operation ${op.name} failed after ${e.node.objectCount} objects
+              - With status: ${e.node.status} - error code: ${e.node.errorCode}
+            `,
           },
           error: e,
         });
