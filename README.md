@@ -258,3 +258,7 @@ You can also test an incremental build without restarting the test site by runni
 
 [bulk-operations]: https://shopify.dev/tutorials/perform-bulk-operations-with-admin-api
 [gatsby-plugin-image]: https://www.npmjs.com/package/gatsby-plugin-image
+
+## Migrating from v4 to v5
+
+We don't currently have a migration guide but you can find some tips in [this issue](https://github.com/gatsbyjs/gatsby-source-shopify/issues/151). Please read through it and add a comment with any additional information you might have.
