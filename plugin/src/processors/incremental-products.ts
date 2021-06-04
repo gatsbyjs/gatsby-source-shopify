@@ -18,7 +18,7 @@ export function incrementalProductsProcessor(
   })
 
   const variants = gatsbyApi.getNodesByType(`${pluginOptions.typePrefix || ``}ShopifyProductVariant`).filter((node) => nodeIds.includes(node.productId as string))
-  
+
   variants.forEach(variant => {
     gatsbyApi.actions.deleteNode(variant)
   })

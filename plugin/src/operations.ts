@@ -204,7 +204,6 @@ export function createOperations(
     createProductsOperation: createOperation(
       new ProductsQuery(options).query(),
       "PRODUCTS",
-      incrementalProductsProcessor
     ),
 
     createOrdersOperation: createOperation(
