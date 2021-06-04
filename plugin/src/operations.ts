@@ -4,7 +4,10 @@ import { createClient } from "./client";
 import { ProductsQuery } from "./query-builders/products-query";
 import { CollectionsQuery } from "./query-builders/collections-query";
 import { OrdersQuery } from "./query-builders/orders-query";
-import { collectionsProcessor, incrementalProductsProcessor } from "./processors";
+import {
+  collectionsProcessor,
+  incrementalProductsProcessor,
+} from "./processors";
 import { OperationError } from "./errors";
 
 import {
@@ -182,7 +185,7 @@ export function createOperations(
       return createOperation(
         new ProductsQuery(options).query(date),
         "INCREMENTAL_PRODUCTS",
-        incrementalProductsProcessor,
+        incrementalProductsProcessor
       );
     },
 
@@ -203,7 +206,7 @@ export function createOperations(
 
     createProductsOperation: createOperation(
       new ProductsQuery(options).query(),
-      "PRODUCTS",
+      "PRODUCTS"
     ),
 
     createOrdersOperation: createOperation(

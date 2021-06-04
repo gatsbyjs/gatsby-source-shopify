@@ -693,8 +693,8 @@ describe("When an operation fails with bad credentials", () => {
 
 describe("The incremental products processor", () => {
   const firstProductId = "gid://shopify/Product/22345";
-  const firstVariantId = "gid://shopify/ProductVariant/11111"
-  const secondVariantId = "gid://shopify/ProductVariant/22222"
+  const firstVariantId = "gid://shopify/ProductVariant/11111";
+  const secondVariantId = "gid://shopify/ProductVariant/22222";
 
   const bulkResults = [
     {
@@ -702,7 +702,7 @@ describe("The incremental products processor", () => {
     },
     {
       id: firstVariantId,
-      __parentId: firstProductId
+      __parentId: firstProductId,
     },
   ];
 
@@ -763,13 +763,13 @@ describe("The incremental products processor", () => {
           return [
             {
               id: firstVariantId,
-              productId: firstProductId
+              productId: firstProductId,
             },
             {
               id: secondVariantId,
-              productId: firstProductId
-            }
-          ]
+              productId: firstProductId,
+            },
+          ];
         }),
       };
     });
@@ -797,18 +797,17 @@ describe("The incremental products processor", () => {
 
     expect(deleteNode).toHaveBeenCalledTimes(2);
     expect(deleteNode).toHaveBeenCalledWith(
-      expect.objectContaining({ 
+      expect.objectContaining({
         id: firstVariantId,
-        productId: firstProductId
+        productId: firstProductId,
       })
     );
 
     expect(deleteNode).toHaveBeenCalledWith(
-      expect.objectContaining({ 
+      expect.objectContaining({
         id: secondVariantId,
-        productId: firstProductId
+        productId: firstProductId,
       })
     );
-
   });
 });
