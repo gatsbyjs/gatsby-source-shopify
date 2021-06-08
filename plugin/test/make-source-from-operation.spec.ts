@@ -693,6 +693,8 @@ describe("When an operation fails with bad credentials", () => {
 
 describe("The incremental products processor", () => {
   const firstProductId = "gid://shopify/Product/22345";
+  const firstImageId = "gid://shopify/ProductImage/33333";
+  const secondImageId = "gid://shopify/ProductImage/44444";
   const firstVariantId = "gid://shopify/ProductVariant/11111";
   const secondVariantId = "gid://shopify/ProductVariant/22222";
   const firstMetadataId = "gid://shopify/Metafield/12345";
@@ -709,6 +711,10 @@ describe("The incremental products processor", () => {
     {
       id: firstMetadataId,
       __parentId: firstVariantId,
+    },
+    {
+      id: firstImageId,
+      __parentId: firstProductId,
     },
   ];
 
@@ -789,6 +795,17 @@ describe("The incremental products processor", () => {
                   productVariantId: secondVariantId,
                 },
               ];
+            case `ShopifyProductImage`:
+              return [
+                {
+                  id: firstImageId,
+                  productId: firstProductId,
+                },
+                {
+                  id: secondImageId,
+                  productId: firstProductId,
+                },
+              ];
             default:
               return [];
           }
@@ -815,8 +832,8 @@ describe("The incremental products processor", () => {
 
     await sourceFromOperation(operations.incrementalProducts(new Date()));
 
-    expect(createNode).toHaveBeenCalledTimes(3);
-    expect(deleteNode).toHaveBeenCalledTimes(4);
+    expect(createNode).toHaveBeenCalledTimes(4);
+    expect(deleteNode).toHaveBeenCalledTimes(6);
 
     expect(deleteNode).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -843,6 +860,27 @@ describe("The incremental products processor", () => {
       expect.objectContaining({
         id: secondMetadataId,
         productVariantId: secondVariantId,
+      })
+    );
+
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstImageId,
+        productId: firstProductId,
+      })
+    );
+
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondImageId,
+        productId: firstProductId,
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstImageId,
+        productId: firstProductId,
       })
     );
 
