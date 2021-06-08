@@ -19,9 +19,9 @@ export function incrementalProductsProcessor(
   });
 
   /**
-   * The events API doesn't tell us about deleted variants, so when we
+   * The events API doesn't tell us about deleted variants or images, so when we
    * get the list of changed products, we have to compare those product
-   * variants with what we have in the cache, and delete those that are
+   * variants/images with what we have in the cache, and delete those that are
    * not present in the newer API results.
    */
   const variantsToDelete = gatsbyApi
@@ -30,6 +30,14 @@ export function incrementalProductsProcessor(
 
   variantsToDelete.forEach((variant) => {
     gatsbyApi.actions.deleteNode(variant);
+  });
+
+  const imagesToDelete = gatsbyApi
+    .getNodesByType(`${typePrefix}ShopifyProductImage`)
+    .filter((node) => nodeIds.includes(node.productId as string));
+
+  imagesToDelete.forEach((image) => {
+    gatsbyApi.actions.deleteNode(image);
   });
 
   /**
