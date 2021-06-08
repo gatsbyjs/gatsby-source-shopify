@@ -795,17 +795,17 @@ describe("The incremental products processor", () => {
                   productVariantId: secondVariantId,
                 },
               ];
-              case `ShopifyProductImage`:
-                return [
-                  {
-                    id: firstImageId,
-                    productId: firstProductId,
-                  },
-                  {
-                    id: secondImageId,
-                    productId: firstProductId,
-                  },
-                ];
+            case `ShopifyProductImage`:
+              return [
+                {
+                  id: firstImageId,
+                  productId: firstProductId,
+                },
+                {
+                  id: secondImageId,
+                  productId: firstProductId,
+                },
+              ];
             default:
               return [];
           }
