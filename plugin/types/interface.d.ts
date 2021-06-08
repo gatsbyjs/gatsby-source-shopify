@@ -6,6 +6,7 @@ interface ShopifyPluginOptions {
   shopifyConnections?: string[];
   typePrefix?: string;
   salesChannel?: string;
+  sortKey?: string;
 }
 
 interface NodeBuilder {

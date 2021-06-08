@@ -12,6 +12,8 @@ export class ProductsQuery extends BulkQuery {
       filters.push(`created_at:>='${isoDate}' OR updated_at:>='${isoDate}'`);
     }
 
+    const ProductVariantSortKey = `POSITION`;
+
     const queryString = filters.map((f) => `(${f})`).join(" AND ");
 
     const query = `
@@ -137,7 +139,7 @@ export class ProductsQuery extends BulkQuery {
                   }
                 }
               }
-              variants {
+              variants(sortKey: ${ProductVariantSortKey}) {
                 edges {
                   node {
                     availableForSale
