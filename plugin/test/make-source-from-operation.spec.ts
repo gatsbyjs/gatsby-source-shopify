@@ -870,6 +870,20 @@ describe("The incremental products processor", () => {
       })
     );
 
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondImageId,
+        productId: firstProductId,
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstImageId,
+        productId: firstProductId,
+      })
+    );
+
     expect(createNode).toHaveBeenCalledWith(
       expect.objectContaining({
         id: firstMetadataId,
