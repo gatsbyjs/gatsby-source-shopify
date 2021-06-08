@@ -695,6 +695,8 @@ describe("The incremental products processor", () => {
   const firstProductId = "gid://shopify/Product/22345";
   const firstVariantId = "gid://shopify/ProductVariant/11111";
   const secondVariantId = "gid://shopify/ProductVariant/22222";
+  const firstMetadataId = "gid://shopify/Metafield/12345";
+  const secondMetadataId = "gid://shopify/Metafield/12346";
 
   const bulkResults = [
     {
@@ -703,6 +705,10 @@ describe("The incremental products processor", () => {
     {
       id: firstVariantId,
       __parentId: firstProductId,
+    },
+    {
+      id: firstMetadataId,
+      __parentId: firstVariantId,
     },
   ];
 
@@ -759,17 +765,33 @@ describe("The incremental products processor", () => {
             setStatus: jest.fn(),
           }),
         },
-        getNodesByType: jest.fn().mockImplementation(() => {
-          return [
-            {
-              id: firstVariantId,
-              productId: firstProductId,
-            },
-            {
-              id: secondVariantId,
-              productId: firstProductId,
-            },
-          ];
+        getNodesByType: jest.fn().mockImplementation((nodeType: string) => {
+          switch (nodeType) {
+            case `ShopifyProductVariant`:
+              return [
+                {
+                  id: firstVariantId,
+                  productId: firstProductId,
+                },
+                {
+                  id: secondVariantId,
+                  productId: firstProductId,
+                },
+              ];
+            case `ShopifyProductVariantMetafield`:
+              return [
+                {
+                  id: firstMetadataId,
+                  productVariantId: firstVariantId,
+                },
+                {
+                  id: secondMetadataId,
+                  productVariantId: secondVariantId,
+                },
+              ];
+            default:
+              return [];
+          }
         }),
       };
     });
@@ -793,9 +815,9 @@ describe("The incremental products processor", () => {
 
     await sourceFromOperation(operations.incrementalProducts(new Date()));
 
-    expect(createNode).toHaveBeenCalledTimes(2);
+    expect(createNode).toHaveBeenCalledTimes(3);
+    expect(deleteNode).toHaveBeenCalledTimes(4);
 
-    expect(deleteNode).toHaveBeenCalledTimes(2);
     expect(deleteNode).toHaveBeenCalledWith(
       expect.objectContaining({
         id: firstVariantId,
@@ -807,6 +829,40 @@ describe("The incremental products processor", () => {
       expect.objectContaining({
         id: secondVariantId,
         productId: firstProductId,
+      })
+    );
+
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstMetadataId,
+        productVariantId: firstVariantId,
+      })
+    );
+
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondMetadataId,
+        productVariantId: secondVariantId,
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstMetadataId,
+        productVariantId: firstVariantId,
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstVariantId,
+        productId: firstProductId,
+      })
+    );
+
+    expect(createNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstProductId,
       })
     );
   });
