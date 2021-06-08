@@ -690,3 +690,124 @@ describe("When an operation fails with bad credentials", () => {
     );
   });
 });
+
+describe("The incremental products processor", () => {
+  const firstProductId = "gid://shopify/Product/22345";
+  const firstVariantId = "gid://shopify/ProductVariant/11111";
+  const secondVariantId = "gid://shopify/ProductVariant/22222";
+
+  const bulkResults = [
+    {
+      id: firstProductId,
+    },
+    {
+      id: firstVariantId,
+      __parentId: firstProductId,
+    },
+  ];
+
+  beforeEach(() => {
+    server.use(
+      graphql.query<CurrentBulkOperationResponse>(
+        "OPERATION_STATUS",
+        resolveOnce(currentBulkOperation("COMPLETED"))
+      ),
+      startOperation(),
+      graphql.query<{ node: BulkOperationNode }>(
+        "OPERATION_BY_ID",
+        resolve({
+          node: {
+            status: `COMPLETED`,
+            id: "12345",
+            objectCount: "2",
+            query: "",
+            url: "http://results.url",
+          },
+        })
+      ),
+      rest.get("http://results.url", (_req, res, ctx) => {
+        return res(
+          ctx.text(bulkResults.map((r) => JSON.stringify(r)).join("\n"))
+        );
+      })
+    );
+  });
+
+  it("deletes variants belonging to the products", async () => {
+    const createNode = jest.fn();
+    const deleteNode = jest.fn();
+    const createNodeId = jest.fn().mockImplementation((id) => id);
+
+    const gatsbyApiMock = jest.fn().mockImplementation(() => {
+      return {
+        cache: {
+          set: jest.fn(),
+        },
+        actions: {
+          createNode,
+          deleteNode,
+        },
+        createContentDigest: jest.fn(),
+        createNodeId,
+        reporter: {
+          info: jest.fn(),
+          error: jest.fn(),
+          panic: jest.fn(),
+          activityTimer: () => ({
+            start: jest.fn(),
+            end: jest.fn(),
+            setStatus: jest.fn(),
+          }),
+        },
+        getNodesByType: jest.fn().mockImplementation(() => {
+          return [
+            {
+              id: firstVariantId,
+              productId: firstProductId,
+            },
+            {
+              id: secondVariantId,
+              productId: firstProductId,
+            },
+          ];
+        }),
+      };
+    });
+
+    const gatsbyApi = gatsbyApiMock as jest.Mock<SourceNodesArgs>;
+    const options = {
+      apiKey: ``,
+      password: ``,
+      storeUrl: "my-shop.shopify.com",
+      downloadImages: true,
+    };
+    const operations = createOperations(options, gatsbyApi());
+
+    const sourceFromOperation = makeSourceFromOperation(
+      operations.finishLastOperation,
+      operations.completedOperation,
+      operations.cancelOperationInProgress,
+      gatsbyApi(),
+      options
+    );
+
+    await sourceFromOperation(operations.incrementalProducts(new Date()));
+
+    expect(createNode).toHaveBeenCalledTimes(2);
+
+    expect(deleteNode).toHaveBeenCalledTimes(2);
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: firstVariantId,
+        productId: firstProductId,
+      })
+    );
+
+    expect(deleteNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: secondVariantId,
+        productId: firstProductId,
+      })
+    );
+  });
+});

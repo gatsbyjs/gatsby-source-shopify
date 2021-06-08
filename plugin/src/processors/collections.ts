@@ -1,5 +1,5 @@
 import { NodeInput, SourceNodesArgs } from "gatsby";
-import { pattern as idPattern, createNodeId } from "./node-builder";
+import { pattern as idPattern, createNodeId } from "../node-builder";
 
 export function collectionsProcessor(
   objects: BulkResults,
